@@ -1,4 +1,4 @@
-﻿# RenPy to WebStoryEngine proof-of-concept converter v0.3.5
+﻿# RenPy to WebStoryEngine proof-of-concept converter v0.3.6
 # Very simple code for converting most commonly used code structures
 # Useful for very simple VNs like "The questions" only!
 
@@ -202,7 +202,10 @@ init 9999 python:
         parts = 0
         for item in cmds:
             if  hasattr(renpy.ast, "Say") and isinstance(item,renpy.ast.Say):
-                result += [ {"type":"say","who":item.who,"what":item.what,"stop":True} ]
+                if  item.who in data["characters"] or item.who is None:
+                    result += [ {"type":"say","who":item.who,"what":item.what,"stop":True} ]
+                else:
+                    result += [ {"type":"todo","details":"say with unknown character '" + item.who + "': " + item.what} ]
 
             elif  hasattr(renpy.ast, "UserStatement") and isinstance(item,renpy.ast.UserStatement):
                 cmd = re.findall(r'([\w.]+|".*?")', item.line)
@@ -213,7 +216,7 @@ init 9999 python:
                         fname = renpy.store.__dict__[cmd[2]]
                     else:
                         fname = None
-                    if  fname is not None:
+                    if  fname is not None and isinstance(fname, basestring):
                         channel = cmd[1]
                         parsed = [0, 1, 2]
                         if  'channel' in cmd:
@@ -229,7 +232,7 @@ init 9999 python:
                             result += [{"type":"todo","details":"play statement have extra parameters: "+extras}]
                         result += [{"type":"play","channel":channel,"title":title}]
                     else:
-                        result += [ {"type":"todo","details":"UserStatement : "+item.line} ]
+                        result += [ {"type":"todo","details":"UserStatement play : "+item.line} ]
                 elif  cmd[0] == "stop" and len(cmd) >= 2:
                     channel = cmd[1]
                     parsed = [0, 1]
@@ -288,7 +291,7 @@ init 9999 python:
                     result += [ {"type":"debug","details":"python rule #5: "+item.code.source} ]
                     func = match.group(1)
                     args = match.group(2)
-                    if  func == "pause":
+                    if  func == "pause" and not "," in args:
                         result += [{"type":"pause","time":None if  re.match('^ *$',args) else float(args)}]
                     else:
                         result += [ {"type":"todo","details":"build-in function %s with args: %s" % (func,args) } ]
@@ -388,7 +391,7 @@ init 9999 python:
                         result += [ {"type":"todo","details":t+" option at_list: "+`at_list`} ]
 
                     if  t == "show" and iname[:-1] in data["images_txt"]:
-                        result += [ {"type":"say","who":" ".join(iname[:-1]),"what":iname[-1][1:-1]} ]
+                        result += [ {"type":"say","who":" ".join(iname[:-1]),"what":iname[-1][1:-1],"stop":False} ]
                     elif  t == "hide" and iname in data["images_txt"]:
                         result += [ {"type":"todo","details":"hide renpy.text.extras.ParameterizedText: " + " ".join(iname)} ]
                     else:                        
@@ -633,6 +636,7 @@ init 9999 python:
         result = ""
         for key in sorted(data["branches"].keys()):
             dissolve_duration = 0
+            move_duration = 0
             is_visible = {"nvl":None, "say":None}
             result += """        <scene id="rpy_%s">\n""" % key
             for item in data["branches"][key]:
@@ -651,12 +655,15 @@ init 9999 python:
                     for (r,c) in [ ]:
                         item["what"] = item["what"].replace(r,c)
                     who = item["who"] if item["who"] is not None else "narrator"
-                    mode = data["characters"][who]["mode"]
-                    result += update_textbox(is_visible, mode)
-                    if  item["stop"]:
-                        result += """            <line s="%s">%s</line>\n""" % (who, item["what"])
+                    if  who in data["characters"]:
+                        mode = data["characters"][who]["mode"]
+                        result += update_textbox(is_visible, mode)
+                        if  item["stop"]:
+                            result += """            <line s="%s">%s</line>\n""" % (who, item["what"])
+                        else:
+                            result += """            <line s="%s" stop="false">%s</line>\n""" % (who, item["what"])
                     else:
-                        result += """            <line s="%s" stop="false">%s</line>\n""" % (who, item["what"])
+                        result += """            <!-- [TODO] line s="%s" stop="false" text="%s" -->\n""" % (who, item["what"])
 
         #sound
                 elif item["type"] == "play":
@@ -699,7 +706,7 @@ init 9999 python:
                         if  condition == "True":
                             result += """                <option label="%s" scene="rpy_%s" />\n""" % (label, target)
                         else:
-                            result += """                <!-- [TODO] option label="%s" scene="rpy_%s" condition="%s" />\n""" % (label, target, condition)
+                            result += """                <!-- [TODO] option label="%s" scene="rpy_%s" condition="%s" -->\n""" % (label, target, condition)
                     result += """            </choice>\n"""
 
         #scene, show, hide
@@ -712,20 +719,20 @@ init 9999 python:
                         result += update_textbox(is_visible)
                         result += """            <set asset="%s" ifvar="is_%s_visible" ifvalue="true" image="%s" duration="%d" />\n""" % (item["asset"],item["asset"],item["image"],dissolve_duration)
                         result += """            <set asset="%s" ifvar="is_%s_visible" ifvalue="false" image="%s" duration="0" />\n""" % (item["asset"],item["asset"],item["image"])
-                        result += """            <show asset="%s" ifvar="is_%s_visible" ifvalue="false" duration="%d" />\n""" % (item["asset"],item["asset"],dissolve_duration)
                     else:
                         result += """            <set asset="%s" image="%s" duration="0" />\n""" % (item["asset"],item["image"])
-                        result += """            <show asset="%s" ifvar="is_%s_visible" ifvalue="false" duration="%d" />\n""" % (item["asset"],item["asset"],dissolve_duration)
+                    result += """            <move asset="%s" x="50%%" xAnchor="50%%" y="100%%" yAnchor="100%%" duration="%d" />\n""" % (item["asset"],move_duration)
+                    result += """            <show asset="%s" ifvar="is_%s_visible" ifvalue="false" duration="%d" />\n""" % (item["asset"],item["asset"],dissolve_duration)
                     result += """            <var action="set" name="is_%s_visible" value="true" />\n""" % (item["asset"])
                 elif item["type"] == "show":
                     if  dissolve_duration > 0:
                         result += update_textbox(is_visible)
                         result += """            <set asset="%s" ifvar="is_%s_visible" ifvalue="true" image="%s" duration="%d" />\n""" % (item["asset"],item["asset"],item["image"],dissolve_duration)
                         result += """            <set asset="%s" ifvar="is_%s_visible" ifvalue="false" image="%s" duration="0" />\n""" % (item["asset"],item["asset"],item["image"])
-                        result += """            <show asset="%s" ifvar="is_%s_visible" ifvalue="false" duration="%d" />\n""" % (item["asset"],item["asset"],dissolve_duration)
                     else:
                         result += """            <set asset="%s" image="%s" duration="0" />\n""" % (item["asset"],item["image"])
-                        result += """            <show asset="%s" ifvar="is_%s_visible" ifvalue="false" duration="0" />\n""" % (item["asset"],item["asset"])
+                    result += """            <move asset="%s" x="50%%" xAnchor="50%%" y="100%%" yAnchor="100%%" duration="%d" />\n""" % (item["asset"],move_duration)
+                    result += """            <show asset="%s" ifvar="is_%s_visible" ifvalue="false" duration="%d" />\n""" % (item["asset"],item["asset"],dissolve_duration)
                     result += """            <var action="set" name="is_%s_visible" value="true" />\n""" % (item["asset"])
                 elif item["type"] == "hide":
                     if  dissolve_duration > 0:
