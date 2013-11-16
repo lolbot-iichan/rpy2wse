@@ -1,4 +1,4 @@
-﻿# RenPy to WebStoryEngine proof-of-concept converter v0.3
+﻿# RenPy to WebStoryEngine proof-of-concept converter v0.3.5
 # Very simple code for converting most commonly used code structures
 # Useful for very simple VNs like "The questions" only!
 
@@ -7,9 +7,21 @@
 # =======
 
 init python:
-    _LB_DEBUG_ = True     # This forces 'dump.dbg' creation, containing parsed data tree
-    _LB_SELFTEST_ = True  # This forces check of _LB_test_screen decompilation
+    # This forces 'dump.dbg' creation, containing parsed data tree
+    _LB_DEBUG_FILE_ = True
+    _LB_DEBUG_LINES_ = True
 
+    # This forces check of _LB_test_screen decompilation
+    _LB_SELFTEST_ = True
+
+    # Renpy label name to start the game with, useful for debug
+    _LB_START_LABEL_ = "start"
+
+    # This forces audio convertion from ogg to mp3 and back
+    _LB_DO_CONVERT_ = True
+
+    # Those paths leads to audio converters
+    import os
     _LB_CONVERT_DIR        =  config.basedir + os.sep + "convert"
     _LB_CONVERT_OGG_TO_WAV = _LB_CONVERT_DIR + os.sep + "oggdec"
     _LB_CONVERT_MP3_TO_WAV = _LB_CONVERT_DIR + os.sep + "mpg123"
@@ -55,7 +67,7 @@ init python:
 # CHANGELOG
 # =========
 # 0.1 - 2013.10.11
-#     renpy.ast.Say
+#     renpy.ast.Say: simple text by defined characters
 #     renpy.ast.UserStatement: play, stop
 #     renpy.ast.Translate
 #     renpy.ast.EndTranslate
@@ -79,21 +91,31 @@ init python:
 #     renpy.ast.Python: renpy.pause calls
 #     renpy.ast.UserStatement: pause
 #     renpy.ast.With: Pause
+# 0.4 - in progress
+#     Styles: config.main_menu_music
+#     Runtime: hide&show textbox during transitions
+#     renpy.ast.Say: {{, \n, {i}, {b}, {u}, {s}
+#     renpy.ast.Pass
+#     renpy.ast.Python: string assignment     (aka 'x = "qwerty"')
+#     renpy.ast.If: more simple conditions    (aka 'if x == 0', 'if x == "qwerty"')
+
 
 # ==============================
 # THINGS TO DO IN NEAREST FUTURE
 # ==============================
-# need engine-side support for math:
+# unblocked:
 #     renpy.ast.Python: more complex math     (aka 'x = y * 3 + 2')
 #     renpy.ast.If: more complex math         (aka 'if x == 2', 'if x > 5 and x < y')
 #     renpy.ast.Menu: options with conditions
+#     renpy.ast.Jump: expression
+#     renpy.ast.Call: expression
 # need engine-side support for positions:
 #     renpy.display.motion.ATLTransform       (aka 'show slavya at right')
 #     renpy.ast.With: MoveTransition          (aka 'show slavya at right with move', using <move asset="my_image" duration="1000" />)
 # need engine-side support for new effects:
 #     renpy.ast.With: vpunch, hpunch          (aka 'with vpunch')
 # other todo:
-#     renpy.text.extras.ParameterizedText     (aka 'show text "qwerty" at truecenter')
+#     renpy.text.extras.ParameterizedText     (aka 'show text "qwerty" at truecenter', using <line stop="false"> at custom textbox, hehe)
 #     Styles                                  (generate some CSS: message window, choice buttons, fonts)
 
 # ==================
@@ -132,7 +154,7 @@ init 9999 python:
 
         # characters
         sd = renpy.store.__dict__
-        data["characters"] = [{"name":i,"mode":sd[i].mode,"displayname":sd[i].name} for i in sd if isinstance(sd[i], renpy.character.ADVCharacter)]
+        data["characters"] = dict([(i,{"mode":sd[i].mode,"displayname":sd[i].name}) for i in sd if isinstance(sd[i], renpy.character.ADVCharacter)])
 
         # images
         imgs = renpy.display.image.images
@@ -150,13 +172,16 @@ init 9999 python:
         # some styles
         main_menu_background = [i["background"] for i in style.mm_root.properties if "background" in i][-1]
         if  main_menu_background[0] != "#" and "." in main_menu_background:
-            data["images_simple"][("style","main_menu_background")] = main_menu_background
-            if  not "style" in data["images_simple_packs"]:
-                data["images_simple_packs"] += ["style"]
-            if  not "style" in data["images_packs"]:
-                data["images_packs"] += ["style"]
+            data["images_simple"][("bg","main_menu_background")] = main_menu_background
+            if  not "bg" in data["images_simple_packs"]:
+                data["images_simple_packs"] += ["bg"]
+            if  not "bg" in data["images_packs"]:
+                data["images_packs"] += ["bg"]
 
-        data["sound"] = {}
+        data["sound"] = {"music":{}}
+        if  config.main_menu_music:
+            data["sound"]["music"]["main_menu_music"] = config.main_menu_music
+
         data["branches"] = {}
         for key,value in renpy.game.script.namemap.iteritems():
             if  isinstance(key,unicode) and not key.startswith("_") and not key.endswith("_screen"):
@@ -177,7 +202,7 @@ init 9999 python:
         parts = 0
         for item in cmds:
             if  hasattr(renpy.ast, "Say") and isinstance(item,renpy.ast.Say):
-                result += [ {"type":"say","who":item.who,"what":item.what} ]
+                result += [ {"type":"say","who":item.who,"what":item.what,"stop":True} ]
 
             elif  hasattr(renpy.ast, "UserStatement") and isinstance(item,renpy.ast.UserStatement):
                 cmd = re.findall(r'([\w.]+|".*?")', item.line)
@@ -195,13 +220,13 @@ init 9999 python:
                             channel += "[" + cmd[cmd.index('channel')+1] + "]"
                             parsed += [ cmd.index('channel'), cmd.index('channel')+1 ]
                         if  not channel in data["sound"]:
-                            data["sound"][channel] = []
-                        if  not fname in data["sound"][channel]:
-                            data["sound"][channel] += [fname]
+                            data["sound"][channel] = {}
+                        title = ".".join(fname.split(".")[:-1])
+                        if  not title in data["sound"][channel]:    
+                            data["sound"][channel][title] = fname
                         if  len(cmd) != len(parsed):
                             extras = " ".join([cmd[i] for i in range(len(cmd)) if not i in parsed])
                             result += [{"type":"todo","details":"play statement have extra parameters: "+extras}]
-                        title = ".".join(fname.split(".")[:-1])
                         result += [{"type":"play","channel":channel,"title":title}]
                     else:
                         result += [ {"type":"todo","details":"UserStatement : "+item.line} ]
@@ -230,25 +255,37 @@ init 9999 python:
                 result += r
             elif  hasattr(renpy.ast, "EndTranslate") and isinstance(item,renpy.ast.EndTranslate):
                 pass
+            elif  hasattr(renpy.ast, "Pass") and isinstance(item,renpy.ast.Pass):
+                result += [ {"type":"debug","details":"pass"} ]
 
             elif  hasattr(renpy.ast, "Python") and isinstance(item,renpy.ast.Python):
+                match = re.match('^ *([_a-zA-Z0-9]*) *= *(?:\'([^\']*)\'|"([^"]*)") *$',item.code.source)
+                if  match:
+                    result += [ {"type":"debug","details":"python rule #1: "+item.code.source} ]
+                    val = match.group(3) if match.group(2) is None else match.group(2)
+                    result += [ {"type":"python","action":"set","name":match.group(1),"value":val} ]
+                    continue
                 match = re.match('^ *([_a-zA-Z0-9]*) *= *(True|False|[0-9]+|-[0-9]+) *$',item.code.source)
                 if  match:
+                    result += [ {"type":"debug","details":"python rule #2: "+item.code.source} ]
                     val = "1" if match.group(2) == "True" else "0" if match.group(2) == "False" else match.group(2)
                     result += [ {"type":"python","action":"set","name":match.group(1),"value":val} ]
                     continue
                 match = re.match('^ *([_a-zA-Z0-9]*) *= *([_a-zA-Z0-9]*) *([+-]) *([1-9]) *$',item.code.source)
                 if  match and match.group(1) == match.group(2):
+                    result += [ {"type":"debug","details":"python rule #3: "+item.code.source} ]
                     act = "increase" if match.group(3) == "+" else "decrease"
                     result += [ {"type":"python","action":act,"name":match.group(1)} ] * int(match.group(4))
                     continue
                 match = re.match('^ *([_a-zA-Z0-9]*) *([+-])= *([1-9]) *$',item.code.source)
                 if  match:
+                    result += [ {"type":"debug","details":"python rule #4: "+item.code.source} ]
                     act = "increase" if match.group(2) == "+" else "decrease"
                     result += [ {"type":"python","action":act,"name":match.group(1)} ] * int(match.group(3))
                     continue
                 match = re.match('^ *renpy.([_a-zA-Z0-9.]*)\((.*)\) *$',item.code.source)
                 if  match:
+                    result += [ {"type":"debug","details":"python rule #5: "+item.code.source} ]
                     func = match.group(1)
                     args = match.group(2)
                     if  func == "pause":
@@ -261,11 +298,13 @@ init 9999 python:
             elif  hasattr(renpy.ast, "Menu") and isinstance(item,renpy.ast.Menu) or  hasattr(renpy.ast, "If") and isinstance(item,renpy.ast.If):
                 links = []
                 parts_new = parts + 1
+                has_question = False
                 if  hasattr(renpy.ast, "Menu") and isinstance(item,renpy.ast.Menu):
                     items = []
                     for (optionId,(txt, condition, block)) in enumerate(item.items):
                         if  block is None:
-                            result += [ {"type":"say","who":"narrator","what":txt} ]
+                            result += [ {"type":"say","who":"narrator","what":txt,"stop":False} ]
+                            has_question = True
                         elif  len(block) == 1 and hasattr(renpy.ast, "Jump") and isinstance(block[0],renpy.ast.Jump) and not block[0].expression:
                             items += [ (txt, block[0].target, condition) ]
                         else:
@@ -273,22 +312,39 @@ init 9999 python:
                             parts_new += collect_rpy_branch(branch,block,data,part+parts_new) + 1
                             links += [part+parts_new - 1]
                             items += [ (txt, bname, condition) ]
-                    result += [ {"type":"menu","items":items} ]
+                    result += [ {"type":"menu","items":items,"has_question":has_question} ]
                 else:
                     for (optionId,(condition, block)) in enumerate(item.entries):
-                        bname = branch_name(branch,part+parts_new)
-                        parts_new += collect_rpy_branch(branch,block,data,part+parts_new) + 1
-                        links += [part+parts_new-1]
+                        if  len(block) == 1 and hasattr(renpy.ast, "Jump") and isinstance(block[0],renpy.ast.Jump) and not block[0].expression:
+                            bname = block[0].target
+                        else:
+                            bname = branch_name(branch,part+parts_new)
+                            parts_new += collect_rpy_branch(branch,block,data,part+parts_new) + 1
+                            links += [part+parts_new-1]
+
                         match = re.match('^ *([_a-zA-Z0-9]*) *$',condition)
                         if  match:
+                            result += [ {"type":"debug","details":"if condition rule #1: "+condition} ]
                             if  match.group(1) == "True":
                                 result += [ {"type":"jump","target":bname} ]
                             elif  match.group(1) == "False":
                                 pass
                             else:
                                 result += [ {"type":"jump_if","target":bname,"condition":match.group(1)} ]
-                        else:
-                            result += [ {"type":"todo","details":"jump to "+bname+" if "+condition} ]
+                            continue
+                        match = re.match('^ *([_a-zA-Z0-9]*) *== *(?:\'([^\']*)\'|"([^"]*)") *$',condition)
+                        if  match:
+                            result += [ {"type":"debug","details":"if condition rule #2: "+condition} ]
+                            val = match.group(3) if match.group(2) is None else match.group(2)
+                            result += [ {"type":"jump_if_eq","target":bname,"name":match.group(1),"value":val} ]
+                            continue
+                        match = re.match('^ *([_a-zA-Z0-9]*) *== *(True|False|[0-9]+|-[0-9]+) *$',condition)
+                        if  match:
+                            result += [ {"type":"debug","details":"if condition rule #3: "+condition} ]
+                            val = "1" if match.group(2) == "True" else "0" if match.group(2) == "False" else match.group(2)
+                            result += [ {"type":"jump_if_eq","target":bname,"name":match.group(1),"value":val} ]
+                            continue
+                        result += [ {"type":"todo","details":"jump to "+bname+" if "+condition} ]
                 jname = branch_name(branch,part+parts_new)
                 for l in links:
                     data["branches"][branch_name(branch,l)] += [ {"type":"jump","target":jname} ]
@@ -367,13 +423,25 @@ init 9999 python:
 # Here goes music convertation callers
 # ====================================
 
-    def convert_music(source,source_ext,title,ext):
+    def convert_music(source,ext):
+        title = ".".join(source.split(".")[:-1])
+        source_ext = source.split(".")[-1]
+
         if  source_ext == ext:
             return True, "Nothing to convert"
 
-        srcfile = config.basedir + os.sep + "game" + os.sep + source
+        if  not _LB_DO_CONVERT_:
+            return False, "convertation is disabled, '_LB_DO_CONVERT_' is not 'True'"
+
+        srcfile = config.basedir + os.sep + "game" + os.sep + source.replace("/",os.sep)
         wavfile = config.basedir + os.sep + "temp.wav"
-        dstfile = config.basedir + os.sep + "game" + os.sep + title + "." + ext
+        dstfile = config.basedir + os.sep + "game" + os.sep + title.replace("/",os.sep) + "." + ext
+
+        if  os.path.exists(wavfile):
+            os.unlink(wavfile)
+
+        if  not os.path.exists(srcfile):
+            return False, "Source missing!"
 
         if  os.path.exists(dstfile):
             return True, "Already converted?"
@@ -381,12 +449,17 @@ init 9999 python:
         if  source_ext == "wav":
             wavfile = srcfile
         elif  source_ext == "mp3":
-            cmd = "%s -w %s %s" % (_LB_CONVERT_MP3_TO_WAV, wavfile, srcfile)
-            if  subprocess.call(cmd, shell=True) != 0:
+            cmd = '"%s" -w "%s" "%s"' % (_LB_CONVERT_MP3_TO_WAV, wavfile, srcfile)
+            sub = subprocess.Popen(cmd, stderr=subprocess.STDOUT,stdout = subprocess.PIPE )
+            out, err = sub.communicate()
+            renpy.error((out, err))
+            if  sub.wait() != 0:
                 return False, "running '%s' failed" % _LB_CONVERT_MP3_TO_WAV
         elif  source_ext == "ogg":
-            cmd = "%s -w %s %s" % (_LB_CONVERT_OGG_TO_WAV, wavfile, srcfile)
-            if  subprocess.call(cmd, shell=True) != 0:
+            cmd = '"%s" -w "%s" "%s"' % (_LB_CONVERT_OGG_TO_WAV, wavfile, srcfile)
+            sub = subprocess.Popen(cmd, stderr=subprocess.STDOUT,stdout = subprocess.PIPE )
+            out, err = sub.communicate()
+            if  sub.wait() != 0:
                 return False, "running '%s' failed" % _LB_CONVERT_OGG_TO_WAV
         else:
             return False, "unknown source extention: " + source_ext
@@ -394,17 +467,19 @@ init 9999 python:
         if  ext == "wav":
             shutil.copy2(wavfile,srcfile)
         elif  ext == "mp3":
-            cmd = "%s %s %s" % (_LB_CONVERT_WAV_TO_MP3, wavfile, dstfile)
-            if  subprocess.call(cmd, shell=True) != 0:
+            cmd = '"%s" "%s" "%s"' % (_LB_CONVERT_WAV_TO_MP3, wavfile, dstfile)
+            if  subprocess.call(cmd) != 0:
                 return False, "running '%s' failed" % _LB_CONVERT_WAV_TO_MP3
         elif  ext == "ogg":
-            cmd = "%s -o %s %s" % (_LB_CONVERT_WAV_TO_OGG, dstfile, wavfile)
-            if  subprocess.call(cmd, shell=True) != 0:
+            cmd = '"%s" -o "%s" "%s"' % (_LB_CONVERT_WAV_TO_OGG, dstfile, wavfile)
+            if  subprocess.call(cmd) != 0:
                 return False, "running '%s' failed" % _LB_CONVERT_WAV_TO_OGG
         else:
             return False, "unknown destination extention: " + ext
 
-        os.unlink(wavfile)
+        if  source_ext != "wav":
+            os.unlink(wavfile)
+
         return True, "Converted successfully"
 
 # ==================================================
@@ -433,8 +508,10 @@ init 9999 python:
         for fn, key in data["keymap"]:
             if  fn in [ "next" ]:
                 result += """            <trigger event="keyup" special="%s" name="%s_by_%s" key="%s" />\n""" % ( fn, fn, key.lower(), key )
-            else:
+            elif fn in [ "savegames", "stageclick_enable", "stageclick_disable" ]:                
                 result += """            <trigger event="keyup" function="%s" name="%s_by_%s" key="%s" />\n""" % ( fn, fn, key.lower(), key )
+            else:
+                result += """            <trigger event="keyup" sub="%s" name="%s_by_%s" key="%s" />\n""" % ( fn, fn, key.lower(), key )
         result += """        </triggers>\n"""
 
         return result
@@ -454,8 +531,8 @@ init 9999 python:
         result += """            <nameTemplate>{name}<br /></nameTemplate>\n        </textbox>\n""" 
 
         #<assets><character>
-        for c in data["characters"]:
-            result += """        <character name="%s" textbox="%s">""" % (c["name"], "tb_adv" if c["mode"] == "say" else "tb_nvl")
+        for name, c in data["characters"].iteritems():
+            result += """        <character name="%s" textbox="%s">""" % (name, "tb_adv" if c["mode"] == "say" else "tb_nvl")
             if  c["displayname"] != None:
                 result += """<displayname>%s</displayname>""" % c["displayname"]
             result += """</character>\n"""
@@ -481,15 +558,15 @@ init 9999 python:
         for channel, sounds in data["sound"].iteritems():
             loop = "true" if channel.startswith("music") else "false"
             result += """        <audio name="%s" loop="%s" fade="false">\n""" % (channel, loop)
-            for i in sounds:
-                title, ext = ".".join(i.split(".")[:-1]), i.split(".")[-1]
-                result += """            <track title="%s">\n""" % title
+            for id, sound in sounds.iteritems():
+                title = ".".join(sound.split(".")[:-1])
+                result += """            <track title="%s">\n""" % id
                 for e in ["mp3","ogg"]:
-                    res, reason = convert_music(i,ext,title,e)
+                    res, reason = convert_music(sound,e)
                     if  res:
                         result += """                <source href="game/%s.%s" type="%s" />\n""" % (title,e,e)
                     else:
-                        result += """                <!-- [TODO] convert "game/%s" to "game/%s.%s failed: %s" -->\n""" % (i,title,e,reason)
+                        result += """                <!-- [TODO] convert "game/%s" to "game/%s.%s failed: %s" -->\n""" % (sound,title,e,reason)
                 result += """            </track>\n"""
             result += """        </audio>\n"""
 
@@ -509,14 +586,17 @@ init 9999 python:
             for im in data["images_packs"]:
                 result += """            <hide asset="%s" ifvar="is_%s_visible" ifvalue="true" duration="0" />\n""" % (im,im)
                 result += """            <var action="set" name="is_%s_visible" value="false" />\n""" % (im)
+        if  "main_menu_music" in data["sound"]["music"]:
+            result += """            <set asset="music" track="main_menu_music" />\n"""
+            result += """            <play asset="music" />\n"""
         result += """            <goto scene="menu" />\n        </scene>\n"""
 
         #<scenes><scene id="menu">
         result += """        <scene id="menu">\n"""
-        if  ("style","main_menu_background") in data["images_simple"]:
-            result += """            <set asset="style" image="main_menu_background" duration="0" />\n"""
-            result += """            <show asset="style" ifvar="is_style_visible" ifvalue="false" duration="0" />\n"""
-            result += """            <var action="set" name="is_style_visible" value="true" />\n"""
+        if  ("bg","main_menu_background") in data["images_simple"]:
+            result += """            <set asset="bg" image="main_menu_background" duration="0" />\n"""
+            result += """            <show asset="bg" ifvar="is_bg_visible" ifvalue="false" duration="0" />\n"""
+            result += """            <var action="set" name="is_bg_visible" value="true" />\n"""
         result += """            <choice>\n"""
         result += """                <option label="Start Game" scene="game" />\n"""
         result += """                <option label="Load Game" scene="saveload" />\n"""
@@ -526,49 +606,94 @@ init 9999 python:
         result += """        <scene id="saveload">\n            <fn name="savegames" />\n            <goto scene="menu" />\n        </scene>\n"""
 
         #<scenes><scene id="game">
-        result += """        <scene id="game">\n            <show asset="tb_adv" effect="slide" direction="top" duration="2000"/>\n"""
-        result += """            <sub scene="rpy_start" />\n"""
+        result += """        <scene id="game">\n"""
+        result += """            <sub scene="rpy_%s" />\n""" % _LB_START_LABEL_
         for fn, key in data["keymap"]:
             result += """            <trigger name="%s_by_%s" action="deactivate" />\n""" % ( fn, key.lower() )
-        result += """            <hide asset="tb_adv" effect="slide" direction="bottom" duration="2000" />\n"""
+        result += """            <hide asset="tb_nvl" duration="0" />\n"""
+        result += """            <hide asset="tb_adv" duration="0" />\n"""
         result += """            <wait />\n            <restart/>\n        </scene>\n"""
         return result
-        
+
+    def update_textbox(is_visible, mode=None):
+        result = ""
+        other_modes = ["nvl"] if mode == "say" else ["say"] if mode == "nvl" else ["say","nvl"]
+        if  mode is not None:
+            if  is_visible[mode] is not True:
+                result += """            <show asset="%s" duration="0" />\n""" % ("tb_adv" if mode=="say" else "tb_nvl")
+                is_visible[mode] = True
+        for mode in other_modes:
+            if  is_visible[mode] is not False:
+                result += """            <clear asset="%s" />\n""" % ("tb_adv" if mode=="say" else "tb_nvl")
+                result += """            <hide asset="%s" duration="0" />\n""" % ("tb_adv" if mode=="say" else "tb_nvl")
+                is_visible[mode] = False
+        return result
+
     def generate_xml_scenes(data):
         result = ""
-
         for key in sorted(data["branches"].keys()):
             dissolve_duration = 0
+            is_visible = {"nvl":None, "say":None}
             result += """        <scene id="rpy_%s">\n""" % key
             for item in data["branches"][key]:
+        #say
                 if  item["type"] == "say":
-                    for (r,c) in [('&','&amp;'),('"','&quot;'),("'",'&apos;'),('<','&lt;'),('>','&gt;'),]:
-                        item["what"].replace(r,c)
-                    result += """            <line s="%s">%s</line>\n""" % (item["who"] if item["who"] is not None else "narrator", item["what"])
+                    for (r,c) in [
+                            ('{{','_LB_MAGICAL_CURLY_BRACE_'), 
+                            ('&','&amp;'), ('"','&quot;'), ("'",'&apos;'), ('<','&lt;'), ('>','&gt;'),
+                            ('{i}','<i>'), ('{/i}','</i>'), ('{b}','<b>'), ('{/b}','</b>'),
+                            ('{s}','<s>'), ('{/s}','</s>'), ('{u}','<u>'), ('{/u}','</u>'),
+                            ('_LB_MAGICAL_CURLY_BRACE_','{'), ('\n','<br/>')
+                        ]:
+                        item["what"] = item["what"].replace(r,c)
+                    #TODO style:   {a=label}, {a=http://...}, {color=f00}, {font=filename.ttf}, {image=filename}, {plain}, {size=spec}, {=style}
+                    #TODO control: {fast}, {nw}, {p}, {w}, {w=.5}
+                    for (r,c) in [ ]:
+                        item["what"] = item["what"].replace(r,c)
+                    who = item["who"] if item["who"] is not None else "narrator"
+                    mode = data["characters"][who]["mode"]
+                    result += update_textbox(is_visible, mode)
+                    if  item["stop"]:
+                        result += """            <line s="%s">%s</line>\n""" % (who, item["what"])
+                    else:
+                        result += """            <line s="%s" stop="false">%s</line>\n""" % (who, item["what"])
 
+        #sound
                 elif item["type"] == "play":
                     result += """            <set asset="%s" track="%s" />\n""" % (item["channel"],item["title"])
                     result += """            <play asset="%s" />\n""" % (item["channel"])
                 elif item["type"] == "stop":
                     result += """            <stop asset="%s" />\n""" % (item["channel"])
 
-                elif item["type"] == "pause":
-                    if  item["time"] is None:
-                        result += """            <break />\n"""
-                    else:
-                        result += """            <wait duration="%d" />\n""" % ( item["time"]*1000 )
-
+        #python
                 elif item["type"] == "python":
                     if  item["action"] == "set":
                         result += """            <var name="%s" action="set" value="%s" />\n""" % (item["name"],item["value"])
                     else:
                         result += """            <var name="%s" action="%s" />\n""" % (item["name"],item["action"])
 
+        #pause
+                elif item["type"] == "pause":
+                    result += update_textbox(is_visible)
+                    if  item["time"] is None:
+                        result += """            <break />\n"""
+                    else:
+                        result += """            <wait duration="%d" />\n""" % ( item["time"]*1000 )
+                        result += """            <wait />\n"""
+
+        #jumps
+                #FIXME: remove 'jump_if_eq' when python math converter is ready
+                elif item["type"] == "jump_if_eq": 
+                    result += """            <goto scene="rpy_%s" ifvar="%s" ifvalue="%s"/>\n""" % (item["target"],item["name"],item["value"])
                 elif item["type"] == "jump_if":
                     result += """            <goto scene="rpy_%s" ifvar="%s" ifnot="0"/>\n""" % (item["target"],item["condition"])
                 elif item["type"] == "jump":
                     result += """            <goto scene="rpy_%s" />\n""" % (item["target"])
+
+        #menu
                 elif item["type"] == "menu":
+                    if  not item["has_question"]:
+                        result += update_textbox(is_visible)
                     result += """            <choice>\n"""
                     for (label, target, condition) in item["items"]:
                         if  condition == "True":
@@ -577,30 +702,46 @@ init 9999 python:
                             result += """                <!-- [TODO] option label="%s" scene="rpy_%s" condition="%s" />\n""" % (label, target, condition)
                     result += """            </choice>\n"""
 
+        #scene, show, hide
                 elif item["type"] == "scene":
                     for im in data["images_packs"]:
                         if  im !=  item["asset"]:
                             result += """            <hide asset="%s" ifvar="is_%s_visible" ifvalue="true" duration="%d" />\n""" % (im,im,dissolve_duration)
                             result += """            <var action="set" name="is_%s_visible" value="false" />\n""" % (im)
-                    result += """            <set asset="%s" ifvar="is_%s_visible" ifvalue="true" image="%s" duration="%d" />\n""" % (item["asset"],item["asset"],item["image"],dissolve_duration)
-                    result += """            <set asset="%s" ifvar="is_%s_visible" ifvalue="false" image="%s" duration="0" />\n""" % (item["asset"],item["asset"],item["image"])
-                    result += """            <show asset="%s" ifvar="is_%s_visible" ifvalue="false" duration="%d" />\n""" % (item["asset"],item["asset"],dissolve_duration)
+                    if  dissolve_duration > 0:
+                        result += update_textbox(is_visible)
+                        result += """            <set asset="%s" ifvar="is_%s_visible" ifvalue="true" image="%s" duration="%d" />\n""" % (item["asset"],item["asset"],item["image"],dissolve_duration)
+                        result += """            <set asset="%s" ifvar="is_%s_visible" ifvalue="false" image="%s" duration="0" />\n""" % (item["asset"],item["asset"],item["image"])
+                        result += """            <show asset="%s" ifvar="is_%s_visible" ifvalue="false" duration="%d" />\n""" % (item["asset"],item["asset"],dissolve_duration)
+                    else:
+                        result += """            <set asset="%s" image="%s" duration="0" />\n""" % (item["asset"],item["image"])
+                        result += """            <show asset="%s" ifvar="is_%s_visible" ifvalue="false" duration="%d" />\n""" % (item["asset"],item["asset"],dissolve_duration)
                     result += """            <var action="set" name="is_%s_visible" value="true" />\n""" % (item["asset"])
                 elif item["type"] == "show":
-                    result += """            <set asset="%s" ifvar="is_%s_visible" ifvalue="true" image="%s" duration="%d" />\n""" % (item["asset"],item["asset"],item["image"],dissolve_duration)
-                    result += """            <set asset="%s" ifvar="is_%s_visible" ifvalue="false" image="%s" duration="0" />\n""" % (item["asset"],item["asset"],item["image"])
-                    result += """            <show asset="%s" ifvar="is_%s_visible" ifvalue="false" duration="%d" />\n""" % (item["asset"],item["asset"],dissolve_duration)
+                    if  dissolve_duration > 0:
+                        result += update_textbox(is_visible)
+                        result += """            <set asset="%s" ifvar="is_%s_visible" ifvalue="true" image="%s" duration="%d" />\n""" % (item["asset"],item["asset"],item["image"],dissolve_duration)
+                        result += """            <set asset="%s" ifvar="is_%s_visible" ifvalue="false" image="%s" duration="0" />\n""" % (item["asset"],item["asset"],item["image"])
+                        result += """            <show asset="%s" ifvar="is_%s_visible" ifvalue="false" duration="%d" />\n""" % (item["asset"],item["asset"],dissolve_duration)
+                    else:
+                        result += """            <set asset="%s" image="%s" duration="0" />\n""" % (item["asset"],item["image"])
+                        result += """            <show asset="%s" ifvar="is_%s_visible" ifvalue="false" duration="0" />\n""" % (item["asset"],item["asset"])
                     result += """            <var action="set" name="is_%s_visible" value="true" />\n""" % (item["asset"])
                 elif item["type"] == "hide":
+                    if  dissolve_duration > 0:
+                        result += update_textbox(is_visible)
                     result += """            <hide asset="%s" ifvar="is_%s_visible" ifvalue="true" duration="%d" />\n""" % (item["asset"],item["asset"],dissolve_duration)
                     result += """            <var action="set" name="is_%s_visible" value="false" />\n""" % (item["asset"])
 
+        #with
                 elif item["type"] == "with_begin":
                     if  item["func"] in ["None", "NoTransition"]:
                         pass
                     elif item["func"] == "Dissolve":
+                        result += update_textbox(is_visible)
                         dissolve_duration = int( item["args"][0]*1000 )
                     elif item["func"] == "Fade":
+                        result += update_textbox(is_visible)
                         clr = color(item["kwargs"]["color"]) if "color" in item["kwargs"] else (0,0,0,255)
                         result += """            <show asset="with Fade: %s" duration="%d" />\n""" % ( `clr`,item["args"][0]*1000 )
                         result += """            <wait />\n"""
@@ -612,19 +753,25 @@ init 9999 python:
                     if  item["func"] == "None":
                         pass
                     elif item["func"] == "Dissolve":
+                        if  dissolve_duration > 0:
+                            result += """            <wait />\n"""
                         dissolve_duration = 0
                     elif item["func"] == "Fade":
                         clr = color(item["kwargs"]["color"]) if "color" in item["kwargs"] else (0,0,0,255)
-                        result += """            <clear asset="tb_adv" />\n"""
                         result += """            <hide asset="with Fade: %s" duration="%d" />\n""" % ( `clr`,item["args"][2]*1000 )
                         result += """            <wait />\n"""
                     elif item["func"] == "NoTransition":
                         result += """            <wait duration="%d" />\n""" % ( item["args"][0]*1000 )
+                        result += """            <wait />\n"""
                     else:    
                         result += """            <!-- [TODO] here ends with %s%s%s -->\n""" % (item["func"], `item["args"]`, `item["kwargs"]`)                    
 
+        #other
                 elif item["type"] == "todo":
                     result += """            <!-- [TODO] %s -->\n""" % item["details"]
+                elif item["type"] == "debug":
+                    if  _LB_DEBUG_LINES_:
+                        result += """            <!-- [DEBUG] %s -->\n""" % item["details"]
                 else:
                     renpy.error(item)
             result += """        </scene>\n"""
@@ -750,7 +897,7 @@ init 9999 python:
 
     data = collect_rpy()   
 
-    if  _LB_DEBUG_:
+    if  _LB_DEBUG_FILE_:
         with open("dump.dbg","w") as f:
             f.write(generate_dbg(data).encode("UTF-8"))
 
