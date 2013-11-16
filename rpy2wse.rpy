@@ -1,4 +1,4 @@
-# RenPy to WebStoryEngine proof-of-concept converter v0.1
+# RenPy to WebStoryEngine proof-of-concept converter v0.1.1
 # Very simple code for converting most commonly used code structures
 # Useful for very simple VNs like "The questions" only!
 
@@ -68,11 +68,21 @@ init 9999 python:
 
         # images
         data["images_all"] = renpy.display.image.images
-        data["images_simple"] = dict([(i,img) for i,img in data["images_all"].iteritems() if isinstance(img, renpy.display.im.Image)])
+        data["images_simple"] = dict([(i,img.filename) for i,img in data["images_all"].iteritems() if isinstance(img, renpy.display.im.Image)])
         data["images_simple_packs"] = list(set([i[0] for i in data["images_simple"]]))
         data["images_solid"]  = dict([(i,img.color) for i,img in data["images_all"].iteritems() if isinstance(img, renpy.display.imagelike.Solid)])
         data["images_packs"] = list(set(data["images_simple_packs"]+[i[0] for i in data["images_solid"]]))
         data["images_ignore"] = dict([(i,img) for i,img in data["images_all"].iteritems() if isinstance(img, renpy.text.extras.ParameterizedText)])
+
+        # some styles
+        main_menu_background = [i["background"] for i in style.mm_root.properties if "background" in i][-1]
+        if  main_menu_background[0] != "#" and "." in main_menu_background:
+            data["images_all"][("style","main_menu_background")] = Image(main_menu_background)
+            data["images_simple"][("style","main_menu_background")] = main_menu_background
+            if  not "style" in data["images_simple_packs"]:
+                data["images_simple_packs"] += ["style"]
+            if  not "style" in data["images_packs"]:
+                data["images_packs"] += ["style"]
 
         data["sound"] = {}
         data["sound_todo"] = []
@@ -213,10 +223,10 @@ init 9999 python:
             result += """        <imagepack name="%s">\n""" % i
             for name, img in data["images_simple"].iteritems():
                 if  name[0] == i:
-                    result += """            <image name="%s" src="%s" />\n""" % (" ".join(name[1:]), "game/"+img.filename)
+                    result += """            <image name="%s" src="%s" />\n""" % (" ".join(name[1:]), "game/"+img)
             result += """        </imagepack>\n"""
         for i, clr in data["images_solid"].iteritems():
-            result += """        <curtain name="%s" color="rgba(%d,%d,%d,%.2f)" />\n""" % (" ".join(i), clr[0], clr[1], clr[2], clr[3]/255.0)
+            result += """        <curtain name="%s" color="rgba(%d,%d,%d,%.2f)" z="0" />\n""" % (" ".join(i), clr[0], clr[1], clr[2], clr[3]/255.0)
         for i in data["images_all"]:
             if not i in data["images_simple"].keys() + data["images_solid"].keys() + data["images_ignore"].keys():
                 result += """        <!-- [TODO] Not a simple image: %s = %s -->\n""" % (" ".join(i),`img_dict[i]`)
@@ -248,7 +258,12 @@ init 9999 python:
         result += """            <goto scene="menu" />\n        </scene>\n"""
 
         #<scenes><scene id="menu">
-        result += """        <scene id="menu">\n            <choice>\n"""
+        result += """        <scene id="menu">\n"""
+        if  ("style","main_menu_background") in data["images_simple"]:
+            result += """            <set asset="style" image="main_menu_background" duration="0" />\n"""
+            result += """            <show asset="style" ifvar="is_style_visible" ifvalue="false" duration="0" />\n"""
+            result += """            <var action="set" name="is_style_visible" value="true" />\n"""
+        result += """            <choice>\n"""
         result += """                <option label="Start Game" scene="game" />\n"""
         result += """                <option label="Load Game" scene="saveload" />\n"""
         result += """            </choice>\n            <goto scene="menu" />\n        </scene>\n"""
