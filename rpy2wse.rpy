@@ -163,6 +163,7 @@ init 9999 python:
         data["images_solid"] = dict([(i,img.color) for i,img in imgs.iteritems() if isinstance(img, renpy.display.imagelike.Solid)])
         data["images_packs"] = list(set(data["images_simple_packs"]+[i[0] for i in data["images_solid"]]))
         data["images_txt"] = dict([(i,img) for i,img in imgs.iteritems() if isinstance(img, renpy.text.extras.ParameterizedText)])
+        data["images_scenes"] = set()
         data["images_todo"] = {}
         for i, img in imgs.iteritems():
             if  not i in data["images_simple"].keys() + data["images_solid"].keys() + data["images_txt"].keys():
@@ -378,6 +379,8 @@ init 9999 python:
                     iname, expression, tag, at_list, layer, zorder, behind = item.imspec
                 if  not expression:
                     t = "scene" if isinstance(item,renpy.ast.Scene) else "show" if isinstance(item,renpy.ast.Show) else "hide"
+                    if  t == "scene":
+                        data["images_scenes"].add(iname[0])
                     at = None
 
                     if  zorder:
@@ -388,6 +391,7 @@ init 9999 python:
                         result += [ {"type":"todo","details":t+" option behind: "+`behind`} ]
                     if  layer != "master":
                         result += [ {"type":"todo","details":t+" option layer: "+`layer`} ]
+
                     if  at_list:
                         if len(at_list) == 1 and at_list[0] in ["center","left","right"]:
                             at = at_list[0]
@@ -548,7 +552,7 @@ init 9999 python:
 
         #<assets><imagepack>
         #<assets><curtain>
-        for i in data["images_simple_packs"]:
+        for i in sorted(data["images_simple_packs"],key=lambda x: x not in data["images_scenes"]):
             result += """        <imagepack name="%s">\n""" % i
             for name, img in data["images_simple"].iteritems():
                 if  name[0] == i:
@@ -858,6 +862,8 @@ init 9999 python:
                 result += "    "*tab + "%s: %s\n" % (k,`data[k]`)
             elif isinstance(data[k], (dict, list, tuple, types.DictType)):
                 result += "    "*tab + "%s:\n%s" % (k,generate_dbg(data[k],tab+1))
+            elif isinstance(data[k], (set)):
+                result += "    "*tab + "%s:\n%s" % (k,generate_dbg(list(data[k]),tab+1))
             else:
                 result += "    "*tab + "%s: <TODO>\n%s" % (k,generate_dbg({"type":`type(data[k])`,"str":`data[k]`},tab+1))
         return result            
