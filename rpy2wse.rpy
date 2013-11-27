@@ -378,6 +378,7 @@ init 9999 python:
                     iname, expression, tag, at_list, layer, zorder, behind = item.imspec
                 if  not expression:
                     t = "scene" if isinstance(item,renpy.ast.Scene) else "show" if isinstance(item,renpy.ast.Show) else "hide"
+                    at = None
 
                     if  zorder:
                         result += [ {"type":"todo","details":t+" option zorder: " + `zorder`} ]
@@ -388,14 +389,17 @@ init 9999 python:
                     if  layer != "master":
                         result += [ {"type":"todo","details":t+" option layer: "+`layer`} ]
                     if  at_list:
-                        result += [ {"type":"todo","details":t+" option at_list: "+`at_list`} ]
+                        if len(at_list) == 1 and at_list[0] in ["center","left","right"]:
+                            at = at_list[0]
+                        else:
+                            result += [ {"type":"todo","details":t+" option at_list: "+`at_list`} ]
 
                     if  t == "show" and iname[:-1] in data["images_txt"]:
                         result += [ {"type":"say","who":" ".join(iname[:-1]),"what":iname[-1][1:-1],"stop":False} ]
                     elif  t == "hide" and iname in data["images_txt"]:
                         result += [ {"type":"todo","details":"hide renpy.text.extras.ParameterizedText: " + " ".join(iname)} ]
                     else:                        
-                        result += [ {"type":t,"asset":iname[0],"image":" ".join(iname[1:])} ]
+                        result += [ {"type":t,"asset":iname[0],"image":" ".join(iname[1:]),"at":at} ]
                 else:
                     result += [ {"type":"todo","details":"show expression: "+expression} ]
 
@@ -731,7 +735,12 @@ init 9999 python:
                         result += """            <set asset="%s" ifvar="is_%s_visible" ifvalue="false" image="%s" duration="0" />\n""" % (item["asset"],item["asset"],item["image"])
                     else:
                         result += """            <set asset="%s" image="%s" duration="0" />\n""" % (item["asset"],item["image"])
-                    result += """            <move asset="%s" x="50%%" xAnchor="50%%" y="100%%" yAnchor="100%%" duration="%d" />\n""" % (item["asset"],move_duration)
+                    if  item["at"] in ["center",None]:
+                        result += """            <move asset="%s" x="50%%" xAnchor="50%%" y="100%%" yAnchor="100%%" duration="%d" />\n""" % (item["asset"],move_duration)
+                    elif item["at"] == "left":
+                        result += """            <move asset="%s" x="0%%" xAnchor="0%%" y="100%%" yAnchor="100%%" duration="%d" />\n""" % (item["asset"],move_duration)
+                    elif item["at"] == "right":
+                        result += """            <move asset="%s" x="100%%" xAnchor="100%%" y="100%%" yAnchor="100%%" duration="%d" />\n""" % (item["asset"],move_duration)
                     result += """            <show asset="%s" ifvar="is_%s_visible" ifvalue="false" duration="%d" />\n""" % (item["asset"],item["asset"],dissolve_duration)
                     result += """            <var action="set" name="is_%s_visible" value="true" />\n""" % (item["asset"])
                 elif item["type"] == "hide":
