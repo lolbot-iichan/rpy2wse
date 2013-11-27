@@ -205,6 +205,10 @@ init 9999 python:
             if  hasattr(renpy.ast, "Say") and isinstance(item,renpy.ast.Say):
                 if  item.who in data["characters"] or item.who is None:
                     result += [ {"type":"say","who":item.who,"what":item.what,"stop":True} ]
+                elif re.match('^"[^"]*"$',item.who):
+                    who = "undef:"+item.who[1:-1]
+                    data["characters"][who] = {"mode":"say","displayname":item.who[1:-1]}
+                    result += [ {"type":"say","who":who,"what":item.what,"stop":True} ]
                 else:
                     result += [ {"type":"todo","details":"say with unknown character '" + item.who + "': " + item.what} ]
 
