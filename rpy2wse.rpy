@@ -361,6 +361,12 @@ init 9999 python:
                 parts = parts_new
                 result = []
 
+            elif  hasattr(renpy.ast, "Call") and isinstance(item,renpy.ast.Call):
+                if  not item.expression and not item.arguments:
+                    result += [ {"type":"call","target":item.label} ]
+                else:
+                    result += [ {"type":"todo","details":"call with expression or arguments: "+item.label} ]
+
             elif  hasattr(renpy.ast, "Jump") and isinstance(item,renpy.ast.Jump):
                 if  not item.expression:
                     result += [ {"type":"jump","target":item.target} ]
@@ -708,6 +714,9 @@ init 9999 python:
                     result += """            <goto scene="rpy_%s" ifvar="%s" ifnot="0"/>\n""" % (item["target"],item["condition"])
                 elif item["type"] == "jump":
                     result += """            <goto scene="rpy_%s" />\n""" % (item["target"])
+                elif item["type"] == "call":
+                    result += """            <sub scene="rpy_%s" />\n""" % (item["target"])
+                    is_visible = {"nvl":None, "say":None}
 
         #menu
                 elif item["type"] == "menu":
