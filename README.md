@@ -3,19 +3,6 @@ Converts Ren'Py visual novels to WebStory Engine HTML5 game using RPYC and some 
 
 ##CONTACTS
 Copyleft by lolbot, member of IIchan.hk eroge project.
-         _                             
-       ,' ".   ,-"-.                        
-      :     '.'▄██▄ '.
-     :      . ▐█▀ ▐█ ;                     
-     :      ; █▌ ▄█▌,   e r o g a m e       
-      :     ; █▐█▀ /                        
-      '.    ; █   /   _      "  __  __  |          
-       '.   ; █  / |," .''l  | /_/ /   -+-            
-        '.  ; ▌ /  |   l__'  | \__ \__  |              
-         '. ;  /           ._]          [_ 
-          '.; /                          
-           './                          
-            '           
 Written on hard day's nights of pretty nice autumn 2013.
 You can mail me at: lolbot_iichan@mail.ru
 
@@ -31,6 +18,7 @@ It's mostly a Proof Of Concept. You can use this code however you want, I think.
 
 
 ##CHANGELOG
+
 ###0.1 - 2013.10.11
 + renpy.ast.Say: simple text by defined characters
 + renpy.ast.UserStatement: play, stop
@@ -43,11 +31,13 @@ It's mostly a Proof Of Concept. You can use this code however you want, I think.
 + renpy.ast.Show
 + renpy.ast.Hide
 + Runtime: simple menu, jump to rpy_start
+
 ###0.2 - 2013.10.20
 + renpy.ast.With: None, Fade, Dissolve
 + Styles: main menu background
 + Runtime: calling splashscreen, if present
 + Useless: Debug file added
+
 ###0.3 - 2013.10.27
 + convert mp3 to ogg and back (using console utils)
 + renpy.ast.Python: simple math only (aka 'x = True', 'x = x + 9', 'x += 1')
@@ -56,6 +46,7 @@ It's mostly a Proof Of Concept. You can use this code however you want, I think.
 + renpy.ast.Python: renpy.pause calls
 + renpy.ast.UserStatement: pause
 + renpy.ast.With: Pause
+
 ###0.4 - in progress
 + Styles: config.main_menu_music
 + Runtime: hide&show textbox during transitions
@@ -66,17 +57,21 @@ It's mostly a Proof Of Concept. You can use this code however you want, I think.
 
 
 ##THINGS TO DO IN NEAREST FUTURE
+
 ###unblocked:
 + renpy.ast.Python: more complex math (aka 'x = y * 3 + 2')
 + renpy.ast.If: more complex math  (aka 'if x == 2', 'if x > 5 and x < y')
 + renpy.ast.Menu: options with conditions
 + renpy.ast.Jump: expression
 + renpy.ast.Call: expression
+
 ###need engine-side support for positions:
 + renpy.display.motion.ATLTransform (aka 'show slavya at right')
 + renpy.ast.With: MoveTransition (aka 'show slavya at right with move', using <move asset="my_image" duration="1000" />)
+
 ###need engine-side support for new effects:
 + renpy.ast.With: vpunch, hpunch  (aka 'with vpunch')
+
 ###other todo:
 + renpy.text.extras.ParameterizedText (aka 'show text "qwerty" at truecenter', using <line stop="false"> at custom textbox, hehe)
 + Styles (generate some CSS: message window, choice buttons, fonts)
