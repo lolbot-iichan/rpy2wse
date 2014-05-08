@@ -98,6 +98,7 @@ init python:
 #     renpy.ast.Pass
 #     renpy.ast.Python: string assignment     (aka 'x = "qwerty"')
 #     renpy.ast.If: more simple conditions    (aka 'if x == 0', 'if x == "qwerty"')
+#     renpy.ast.Call: no expressions
 
 
 # ==============================
@@ -473,7 +474,6 @@ init 9999 python:
             cmd = '"%s" -w "%s" "%s"' % (_LB_CONVERT_MP3_TO_WAV, wavfile, srcfile)
             sub = subprocess.Popen(cmd, stderr=subprocess.STDOUT,stdout = subprocess.PIPE )
             out, err = sub.communicate()
-            renpy.error((out, err))
             if  sub.wait() != 0:
                 return False, "running '%s' failed" % _LB_CONVERT_MP3_TO_WAV
         elif  source_ext == "ogg":
