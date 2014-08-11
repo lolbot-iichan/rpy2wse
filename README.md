@@ -62,13 +62,13 @@ It's mostly a Proof Of Concept. You can use this code however you want, I think.
 
 ##THINGS TO DO IN NEAREST FUTURE
 
-###using <var/>:
+###using &lt;var/&gt;:
 + renpy.ast.Python: more complex math (aka 'x = y * 3 + 2')
 + renpy.ast.If: more complex math  (aka 'if x == 2', 'if x > 5 and x < y')
 + renpy.ast.Menu: options with conditions
 + renpy.ast.Jump: expression
 + renpy.ast.Call: expression
-###using <move/>:
+###using &lt;move/&gt;:
 + renpy.ast.With: MoveTransition (aka 'show slavya at right with move', using <move asset="my_image" duration="1000" />)
 ###other todo:
 + renpy.text.extras.ParameterizedText (aka 'show text "qwerty" at truecenter', using <line stop="false"> at custom textbox, hehe)
