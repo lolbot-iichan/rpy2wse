@@ -7,8 +7,12 @@
 # =======
 
 init python:
+    import os
+
     # This forces 'dump.dbg' creation, containing parsed data tree
     _LB_DEBUG_FILE_ = True
+
+    # This forces <!-- [DEBUG] ... --> comments in result XML
     _LB_DEBUG_LINES_ = True
 
     # This forces check of _LB_test_screen decompilation
@@ -17,11 +21,13 @@ init python:
     # Renpy label name to start the game with, useful for debug
     _LB_START_LABEL_ = "start"
 
+    # Output directory for resulting WSE project
+    _LB_OUTPUT_DIR = config.basedir + os.sep + "www"
+
     # This forces audio convertion from ogg to mp3 and back
-    _LB_DO_CONVERT_ = True
+    _LB_CONVERT_AUDIO_ = True
 
     # Those paths leads to audio converters
-    import os
     _LB_CONVERT_DIR        =  config.basedir + os.sep + "convert"
     _LB_CONVERT_OGG_TO_WAV = _LB_CONVERT_DIR + os.sep + "oggdec"
     _LB_CONVERT_MP3_TO_WAV = _LB_CONVERT_DIR + os.sep + "mpg123"
@@ -91,30 +97,29 @@ init python:
 #     renpy.ast.Python: renpy.pause calls
 #     renpy.ast.UserStatement: pause
 #     renpy.ast.With: Pause
-# 0.4 - in progress
+# 0.4 - 2014.08.12
 #     Styles: config.main_menu_music
+#     Styles: config.window_icon
 #     Runtime: hide&show textbox during transitions
 #     renpy.ast.Say: {{, \n, {i}, {b}, {u}, {s}
 #     renpy.ast.Pass
 #     renpy.ast.Python: string assignment     (aka 'x = "qwerty"')
 #     renpy.ast.If: more simple conditions    (aka 'if x == 0', 'if x == "qwerty"')
 #     renpy.ast.Call: no expressions
-
+#     renpy.ast.With: vpunch, hpunch          (aka 'with vpunch')
+#     renpy.display.motion.ATLTransform       (aka 'show slavya at right')
 
 # ==============================
 # THINGS TO DO IN NEAREST FUTURE
 # ==============================
-# unblocked:
+# using <var/>:
 #     renpy.ast.Python: more complex math     (aka 'x = y * 3 + 2')
 #     renpy.ast.If: more complex math         (aka 'if x == 2', 'if x > 5 and x < y')
 #     renpy.ast.Menu: options with conditions
 #     renpy.ast.Jump: expression
 #     renpy.ast.Call: expression
-# need engine-side support for positions:
-#     renpy.display.motion.ATLTransform       (aka 'show slavya at right')
-#     renpy.ast.With: MoveTransition          (aka 'show slavya at right with move', using <move asset="my_image" duration="1000" />)
-# need engine-side support for new effects:
-#     renpy.ast.With: vpunch, hpunch          (aka 'with vpunch')
+# using <move/>:
+#     renpy.ast.With: MoveTransition          (aka 'show slavya at right with move'
 # other todo:
 #     renpy.text.extras.ParameterizedText     (aka 'show text "qwerty" at truecenter', using <line stop="false"> at custom textbox, hehe)
 #     Styles                                  (generate some CSS: message window, choice buttons, fonts)
@@ -139,6 +144,7 @@ init 9999 python:
 
         # stage
         data["window_title"] = config.window_title
+        data["window_icon"] = config.window_icon
         data["screen_width"] = config.screen_width
         data["screen_height"] = config.screen_height
 
@@ -242,10 +248,17 @@ init 9999 python:
                 elif  cmd[0] == "stop" and len(cmd) >= 2:
                     channel = cmd[1]
                     parsed = [0, 1]
+                    fadeout = 0.0
                     if  'channel' in cmd:
                         channel += "[" + cmd[cmd.index('channel')+1] + "]"
                         parsed += [ cmd.index('channel'), cmd.index('channel')+1 ]
-                    result += [{"type":"stop","channel":channel}]
+                    if  'fadeout' in cmd:
+                        fadeout = float(cmd[cmd.index('fadeout')+1])
+                        parsed += [ cmd.index('fadeout'), cmd.index('fadeout')+1 ]
+                    if  fadeout == 0.0:
+                        result += [{"type":"stop","channel":channel,"fade":False}]
+                    else:
+                        result += [{"type":"stop","channel":channel,"fade":True,"fadeout":fadeout}]
                     if  len(cmd) != len(parsed):
                         extras = " ".join([cmd[i] for i in range(len(cmd)) if not i in parsed])
                         result += [{"type":"todo","details":"stop statement have extra parameters: "+extras}]
@@ -420,10 +433,15 @@ init 9999 python:
 
             elif  hasattr(renpy.ast, "With") and isinstance(item,renpy.ast.With):
                 func, args, kwargs = "None", tuple(), {}
-                wth = eval(unicode(item.expr),globals())
-                if  wth is not None:
-                    func, args = wth.callable.__name__, wth.args
-                    kwargs = dict([(i,j) for (i,j) in wth.kwargs.iteritems()])
+                if  item.expr in ["hpunch", "vpunch"]:
+                    func = item.expr
+                    args = []
+                    kwargs = {}
+                else:
+                    wth = eval(unicode(item.expr),globals())
+                    if  wth is not None:
+                        func, args = wth.callable.__name__, wth.args
+                        kwargs = dict([(i,j) for (i,j) in wth.kwargs.iteritems()])
                 r = {"type":"with_begin","func":func,"args":args,"kwargs":kwargs}
                 for id in range(len(result)-1,-1,-1):
                     if  result[id]["type"] not in ["show","hide","scene"]:
@@ -452,12 +470,12 @@ init 9999 python:
         if  source_ext == ext:
             return True, "Nothing to convert"
 
-        if  not _LB_DO_CONVERT_:
-            return False, "convertation is disabled, '_LB_DO_CONVERT_' is not 'True'"
+        if  not _LB_CONVERT_AUDIO_:
+            return False, "convertation is disabled, '_LB_CONVERT_AUDIO_' is not 'True'"
 
-        srcfile = config.basedir + os.sep + "game" + os.sep + source.replace("/",os.sep)
+        srcfile = _LB_OUTPUT_DIR + os.sep + "game" + os.sep + source.replace("/",os.sep)
         wavfile = config.basedir + os.sep + "temp.wav"
-        dstfile = config.basedir + os.sep + "game" + os.sep + title.replace("/",os.sep) + "." + ext
+        dstfile = _LB_OUTPUT_DIR + os.sep + "game" + os.sep + title.replace("/",os.sep) + "." + ext
 
         if  os.path.exists(wavfile):
             os.unlink(wavfile)
@@ -486,7 +504,7 @@ init 9999 python:
             return False, "unknown source extention: " + source_ext
 
         if  ext == "wav":
-            shutil.copy2(wavfile,srcfile)
+            shutil.copy2(wavfile,dstfile)
         elif  ext == "mp3":
             cmd = '"%s" "%s" "%s"' % (_LB_CONVERT_WAV_TO_MP3, wavfile, dstfile)
             if  subprocess.call(cmd) != 0:
@@ -511,7 +529,10 @@ init 9999 python:
         result = ""
         result +=  """<!DOCTYPE html>\n<html>\n    <head>\n        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n"""
         result += """        <title>%s</title>\n""" % data["window_title"]
-        result += """        <link rel="stylesheet" href="styles/default.css" type="text/css" />\n    </head>\n"""
+        result += """        <link rel="stylesheet" href="styles.css" type="text/css" />\n"""
+        if  data["window_icon"]:
+            result += """        <link rel="icon" href="favicon.png" type="image/png" />\n"""
+        result += """    </head>\n"""
         result += """    <body>\n        <script src="js/WebStoryEngine.js"></script>\n        <script>\n"""
         result += """            var game = new WSE.Game({ url: "game.xml", host: typeof HOST === "undefined" ? false : HOST });\n"""
         result += """            game.start();\n        </script>\n    </body>\n</html>"""
@@ -577,6 +598,7 @@ init 9999 python:
 
         #<assets><audio>
         for channel, sounds in data["sound"].iteritems():
+            #TODO check channel object, not it's name
             loop = "true" if channel.startswith("music") else "false"
             result += """        <audio name="%s" loop="%s" fade="false">\n""" % (channel, loop)
             for id, sound in sounds.iteritems():
@@ -688,7 +710,10 @@ init 9999 python:
                     result += """            <set asset="%s" track="%s" />\n""" % (item["channel"],item["title"])
                     result += """            <play asset="%s" />\n""" % (item["channel"])
                 elif item["type"] == "stop":
-                    result += """            <stop asset="%s" />\n""" % (item["channel"])
+                    if  item["fade"]:
+                        result += """            <stop asset="%s" fade="true" fadeout="%d"/>\n""" % (item["channel"],item["fadeout"]*1000)
+                    else:
+                        result += """            <stop asset="%s" />\n""" % (item["channel"])
 
         #python
                 elif item["type"] == "python":
@@ -780,8 +805,10 @@ init 9999 python:
                         result += """            <wait />\n"""
                         if  item["args"][2] != 0.0:
                             result += """            <wait duration="%d" />\n""" % ( item["args"][1]*1000 )
+                    elif item["func"] in ["hpunch", "vpunch"]:
+                        pass
                     else:
-                        result += """            <!-- [TODO] here begins with %s%s -->\n""" % (item["func"], `item["args"]`)
+                        result += """            <!-- [TODO] here begins with %s%s%s -->\n""" % (item["func"], `item["args"]`, `item["kwargs"]`)
                 elif item["type"] == "with_end":
                     if  item["func"] == "None":
                         pass
@@ -795,6 +822,14 @@ init 9999 python:
                         result += """            <wait />\n"""
                     elif item["func"] == "NoTransition":
                         result += """            <wait duration="%d" />\n""" % ( item["args"][0]*1000 )
+                        result += """            <wait />\n"""
+                    elif item["func"] == "hpunch":
+                        for im in data["images_packs"]:
+                            result += """            <shake asset="%s" ifvar="is_%s_visible" ifvalue="true" dx="-15px" />\n""" % (im,im)
+                        result += """            <wait />\n"""
+                    elif item["func"] == "vpunch":
+                        for im in data["images_packs"]:
+                            result += """            <shake asset="%s" ifvar="is_%s_visible" ifvalue="true" dx="-10px" />\n""" % (im,im)
                         result += """            <wait />\n"""
                     else:    
                         result += """            <!-- [TODO] here ends with %s%s%s -->\n""" % (item["func"], `item["args"]`, `item["kwargs"]`)                    
@@ -925,6 +960,10 @@ init 9999 python:
 # =====================================
 
 init 9999 python:
+    import os
+    import urllib2
+    import shutil
+
     if  _LB_SELFTEST_:
         res, msg = self_test()
         if  not res:
@@ -932,14 +971,44 @@ init 9999 python:
 
     data = collect_rpy()   
 
+    if  not os.path.exists(_LB_OUTPUT_DIR + os.sep + "js"):
+        os.makedirs(_LB_OUTPUT_DIR + os.sep + "js")
+    if  not os.path.exists(_LB_OUTPUT_DIR + os.sep + "js" + os.sep + "WebStoryEngine.js"):
+        with open(_LB_OUTPUT_DIR + os.sep + "js" + os.sep + "WebStoryEngine.js", "wb") as wse:
+            wse.write(urllib2.urlopen('http://webstoryengine.org/releases/current/WebStoryEngine.js').read())
+
+    if  not os.path.exists(_LB_OUTPUT_DIR + os.sep + "common"):
+        os.makedirs(_LB_OUTPUT_DIR + os.sep + "common")
+    for fname in ["DejaVuSans.ttf", "DejaVuSans.txt"]:
+        shutil.copy2(
+                renpy.config.renpy_base + os.sep + "renpy" + os.sep + "common" + os.sep + fname,
+                _LB_OUTPUT_DIR + os.sep + "common" + os.sep + fname
+            )
+
+    for fname in renpy.list_files():
+        new_fname = _LB_OUTPUT_DIR + os.sep + "game" + os.sep + fname
+        dirname = os.path.dirname(new_fname)
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+        if not os.path.exists(new_fname):
+            with open(new_fname, "wb") as new:
+                with renpy.file(fname) as orig:
+                    shutil.copyfileobj(orig, new)
+
     if  _LB_DEBUG_FILE_:
-        with open("dump.dbg","w") as f:
+        with open(_LB_OUTPUT_DIR+os.sep+"dump.dbg","w") as f:
             f.write(generate_dbg(data).encode("UTF-8"))
 
-    with open("game.xml","w") as f:
+    with open(_LB_OUTPUT_DIR+os.sep+"game.xml","w") as f:
         f.write(generate_xml(data).encode("UTF-8"))
 
-    with open("index.html","w") as f:
+    if  data["window_icon"]:
+        import pygame
+        icon = im.Image(data["window_icon"]).load()
+        icon = pygame.transform.smoothscale(icon, (64,64))
+        pygame.image.save(icon,_LB_OUTPUT_DIR+os.sep+"favicon.png")
+
+    with open(_LB_OUTPUT_DIR+os.sep+"index.html","w") as f:
         f.write(codecs.BOM_UTF8+generate_html(data).encode("UTF-8"))
 
 # ========================================================

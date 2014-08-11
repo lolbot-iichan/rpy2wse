@@ -47,31 +47,29 @@ It's mostly a Proof Of Concept. You can use this code however you want, I think.
 + renpy.ast.UserStatement: pause
 + renpy.ast.With: Pause
 
-###0.4 - in progress
+###0.4 - 2014.08.12
 + Styles: config.main_menu_music
++ Styles: config.window_icon
 + Runtime: hide&show textbox during transitions
 + renpy.ast.Say: {{, \n, {i}, {b}, {u}, {s}
 + renpy.ast.Pass
 + renpy.ast.Python: string assignment     (aka 'x = "qwerty"')
 + renpy.ast.If: more simple conditions    (aka 'if x == 0', 'if x == "qwerty"')
++ renpy.ast.Call: no expressions
++ renpy.ast.With: vpunch, hpunch          (aka 'with vpunch')
++ renpy.display.motion.ATLTransform       (aka 'show slavya at right')
 
 
 ##THINGS TO DO IN NEAREST FUTURE
 
-###unblocked:
+###using <var/>:
 + renpy.ast.Python: more complex math (aka 'x = y * 3 + 2')
 + renpy.ast.If: more complex math  (aka 'if x == 2', 'if x > 5 and x < y')
 + renpy.ast.Menu: options with conditions
 + renpy.ast.Jump: expression
 + renpy.ast.Call: expression
-
-###need engine-side support for positions:
-+ renpy.display.motion.ATLTransform (aka 'show slavya at right')
+###using <move/>:
 + renpy.ast.With: MoveTransition (aka 'show slavya at right with move', using <move asset="my_image" duration="1000" />)
-
-###need engine-side support for new effects:
-+ renpy.ast.With: vpunch, hpunch  (aka 'with vpunch')
-
 ###other todo:
 + renpy.text.extras.ParameterizedText (aka 'show text "qwerty" at truecenter', using <line stop="false"> at custom textbox, hehe)
 + Styles (generate some CSS: message window, choice buttons, fonts)
