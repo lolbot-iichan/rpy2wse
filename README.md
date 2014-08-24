@@ -59,6 +59,8 @@ It's mostly a Proof Of Concept. You can use this code however you want, I think.
 + renpy.ast.With: vpunch, hpunch          (aka 'with vpunch')
 + renpy.display.motion.ATLTransform       (aka 'show slavya at right')
 
+###0.5 - in progress
++ toggle textbox on 'h'
 
 ##THINGS TO DO IN NEAREST FUTURE
 
@@ -69,9 +71,15 @@ It's mostly a Proof Of Concept. You can use this code however you want, I think.
 + renpy.ast.Jump: expression
 + renpy.ast.Call: expression
 
+###behaviour:
++ toggle fullscreen on 'f'
++ toggle fastforward on 'tab'
++ fastforward during 'ctrl'
+
 ###using &lt;move/&gt;:
 + renpy.ast.With: MoveTransition (aka 'show slavya at right with move', using <move asset="my_image" duration="1000" />)
 
 ###other todo:
++ fit screen on mobile
 + renpy.text.extras.ParameterizedText (aka 'show text "qwerty" at truecenter', using <line stop="false"> at custom textbox, hehe)
 + Styles (generate some CSS: message window, choice buttons, fonts)

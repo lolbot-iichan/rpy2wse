@@ -108,6 +108,8 @@ init python:
 #     renpy.ast.Call: no expressions
 #     renpy.ast.With: vpunch, hpunch          (aka 'with vpunch')
 #     renpy.display.motion.ATLTransform       (aka 'show slavya at right')
+# 0.5 - in progress
+#     toggle textbox on 'h'
 
 # ==============================
 # THINGS TO DO IN NEAREST FUTURE
@@ -120,7 +122,12 @@ init python:
 #     renpy.ast.Call: expression
 # using <move/>:
 #     renpy.ast.With: MoveTransition          (aka 'show slavya at right with move'
+# behaviour:
+#     toggle fullscreen on 'f'
+#     toggle fastforward on 'tab'
+#     fastforward during 'ctrl'
 # other todo:
+#     fit screen on mobile
 #     renpy.text.extras.ParameterizedText     (aka 'show text "qwerty" at truecenter', using <line stop="false"> at custom textbox, hehe)
 #     Styles                                  (generate some CSS: message window, choice buttons, fonts)
 
@@ -149,7 +156,14 @@ init 9999 python:
         data["screen_height"] = config.screen_height
 
         # triggers
-        data["keymap"] = [ ["savegames","ESCAPE"], ["next","RIGHT_ARROW"], ["next","ENTER"], ["next","SPACE"] ] 
+        data["keymap"] = [
+                ["savegames","ESCAPE","start"],
+                ["next","RIGHT_ARROW","start"],
+                ["next","ENTER","start"],
+                ["next","SPACE","start"],
+                ["hidetext","H","newgame"],
+                ["next","H","hidetext"]
+            ]
 
         # textbox
         # TODO 
@@ -547,13 +561,13 @@ init 9999 python:
 
         #<settings><triggers>
         result += """        <triggers>\n"""
-        for fn, key in data["keymap"]:
+        for fn, key, whenActivate in data["keymap"]:
             if  fn in [ "next" ]:
                 result += """            <trigger event="keyup" special="%s" name="%s_by_%s" key="%s" />\n""" % ( fn, fn, key.lower(), key )
             elif fn in [ "savegames", "stageclick_enable", "stageclick_disable" ]:                
                 result += """            <trigger event="keyup" function="%s" name="%s_by_%s" key="%s" />\n""" % ( fn, fn, key.lower(), key )
             else:
-                result += """            <trigger event="keyup" sub="%s" name="%s_by_%s" key="%s" />\n""" % ( fn, fn, key.lower(), key )
+                result += """            <trigger event="keyup" scene="%s" name="%s_by_%s" key="%s" />\n""" % ( fn, fn, key.lower(), key )
         result += """        </triggers>\n"""
 
         return result
@@ -620,8 +634,9 @@ init 9999 python:
 
         #<scenes><scene id="start">
         result += """        <scene id="start">\n"""
-        for fn, key in data["keymap"]:
-            result += """            <trigger name="%s_by_%s" action="activate" />\n""" % ( fn, key.lower() )
+        for fn, key, whenActivate in data["keymap"]:
+            if  whenActivate == "start":
+                result += """            <trigger name="%s_by_%s" action="activate" />\n""" % ( fn, key.lower() )
         for im in data["images_packs"]:
             result += """            <var action="set" name="is_%s_visible" value="false" />\n""" % (im)
         if  "splashscreen" in data["branches"]:
@@ -641,21 +656,47 @@ init 9999 python:
             result += """            <show asset="bg" ifvar="is_bg_visible" ifvalue="false" duration="0" />\n"""
             result += """            <var action="set" name="is_bg_visible" value="true" />\n"""
         result += """            <choice>\n"""
-        result += """                <option label="Start Game" scene="game" />\n"""
+        result += """                <option label="Start Game" scene="newgame" />\n"""
         result += """                <option label="Load Game" scene="saveload" />\n"""
         result += """            </choice>\n            <goto scene="menu" />\n        </scene>\n"""
 
         #<scenes><scene id="saveload">
         result += """        <scene id="saveload">\n            <fn name="savegames" />\n            <goto scene="menu" />\n        </scene>\n"""
 
-        #<scenes><scene id="game">
-        result += """        <scene id="game">\n"""
+        #<scenes><scene id="newgame">
+        result += """        <scene id="newgame">\n"""
+        for fn, key, whenActivate in data["keymap"]:
+            if  whenActivate == "newgame":
+                result += """            <trigger name="%s_by_%s" action="activate" />\n""" % ( fn, key.lower() )
         result += """            <sub scene="rpy_%s" />\n""" % _LB_START_LABEL_
-        for fn, key in data["keymap"]:
+        for fn, key, whenActivate in data["keymap"]:
             result += """            <trigger name="%s_by_%s" action="deactivate" />\n""" % ( fn, key.lower() )
         result += """            <hide asset="tb_nvl" duration="0" />\n"""
         result += """            <hide asset="tb_adv" duration="0" />\n"""
         result += """            <wait />\n            <restart/>\n        </scene>\n"""
+
+        #<scenes><scene id="hidetext">
+        result += """        <scene id="hidetext">\n"""
+        for fn, key, whenActivate in data["keymap"]:
+            if  fn == "hidetext":
+                result += """            <trigger name="%s_by_%s" action="deactivate" />\n""" % ( fn, key.lower() )
+        for s in ["tb_adv", "tb_nvl"]:
+                result += """            <hide asset="%s" duration="0" ifvar="is_%s_visible" ifvalue="true"/>\n""" % ( s, s )
+        for fn, key, whenActivate in data["keymap"]:
+            if  whenActivate == "hidetext":
+                result += """            <trigger name="%s_by_%s" action="activate" />\n""" % ( fn, key.lower() )
+        result += """            <break />\n"""
+        for fn, key, whenActivate in data["keymap"]:
+            if  whenActivate == "hidetext":
+                result += """            <trigger name="%s_by_%s" action="deactivate" />\n""" % ( fn, key.lower() )
+        for s in ["tb_adv", "tb_nvl"]:
+                result += """            <show asset="%s" duration="0" ifvar="is_%s_visible" ifvalue="true"/>\n""" % ( s, s )
+        for fn, key, whenActivate in data["keymap"]:
+            if  fn == "hidetext":
+                result += """            <trigger name="%s_by_%s" action="activate" />\n""" % ( fn, key.lower() )
+        result += """            <break />\n        </scene>\n"""
+
+
         return result
 
     def update_textbox(is_visible, mode=None):
@@ -664,11 +705,13 @@ init 9999 python:
         if  mode is not None:
             if  is_visible[mode] is not True:
                 result += """            <show asset="%s" duration="0" />\n""" % ("tb_adv" if mode=="say" else "tb_nvl")
+                result += """            <var action="set" name="is_%s_visible" value="true" />\n""" % ("tb_adv" if mode=="say" else "tb_nvl")
                 is_visible[mode] = True
         for mode in other_modes:
             if  is_visible[mode] is not False:
                 result += """            <clear asset="%s" />\n""" % ("tb_adv" if mode=="say" else "tb_nvl")
                 result += """            <hide asset="%s" duration="0" />\n""" % ("tb_adv" if mode=="say" else "tb_nvl")
+                result += """            <var action="set" name="is_%s_visible" value="false" />\n""" % ("tb_adv" if mode=="say" else "tb_nvl")
                 is_visible[mode] = False
         return result
 
