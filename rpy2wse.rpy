@@ -1,4 +1,4 @@
-﻿# RenPy to WebStoryEngine proof-of-concept converter v0.3.6
+﻿# RenPy to WebStoryEngine proof-of-concept converter
 # Very simple code for converting most commonly used code structures
 # Useful for very simple VNs like "The questions" only!
 
