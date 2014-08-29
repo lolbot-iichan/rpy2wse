@@ -109,7 +109,8 @@ init python:
 #     renpy.ast.With: vpunch, hpunch          (aka 'with vpunch')
 #     renpy.display.motion.ATLTransform       (aka 'show slavya at right')
 # 0.5 - in progress
-#     toggle textbox on 'h'
+#     Runtime: toggle textbox on 'h'
+#     Runtime: simple help screen
 
 # ==============================
 # THINGS TO DO IN NEAREST FUTURE
@@ -157,12 +158,13 @@ init 9999 python:
 
         # triggers
         data["keymap"] = [
-                ["savegames","ESCAPE","start"],
-                ["next","RIGHT_ARROW","start"],
-                ["next","ENTER","start"],
-                ["next","SPACE","start"],
-                ["hidetext","H","newgame"],
-                ["next","H","hidetext"]
+                ["savegames","ESCAPE","start","Escape"],
+                ["help","F1","start","F1"],
+                ["next","RIGHT_ARROW","start","Right"],
+                ["next","ENTER","start","Enter"],
+                ["next","SPACE","start","Space"],
+                ["hidetext","H","newgame","h (case insensitive)"],
+                ["next","H","hidetext",None]
             ]
 
         # textbox
@@ -561,7 +563,7 @@ init 9999 python:
 
         #<settings><triggers>
         result += """        <triggers>\n"""
-        for fn, key, whenActivate in data["keymap"]:
+        for fn, key, whenActivate, name in data["keymap"]:
             if  fn in [ "next" ]:
                 result += """            <trigger event="keyup" special="%s" name="%s_by_%s" key="%s" />\n""" % ( fn, fn, key.lower(), key )
             elif fn in [ "savegames", "stageclick_enable", "stageclick_disable" ]:                
@@ -634,7 +636,7 @@ init 9999 python:
 
         #<scenes><scene id="start">
         result += """        <scene id="start">\n"""
-        for fn, key, whenActivate in data["keymap"]:
+        for fn, key, whenActivate, name in data["keymap"]:
             if  whenActivate == "start":
                 result += """            <trigger name="%s_by_%s" action="activate" />\n""" % ( fn, key.lower() )
         for im in data["images_packs"]:
@@ -658,40 +660,53 @@ init 9999 python:
         result += """            <choice>\n"""
         result += """                <option label="Start Game" scene="newgame" />\n"""
         result += """                <option label="Load Game" scene="saveload" />\n"""
+        result += """                <option label="Help"><sub scene="help" /></option>\n"""
         result += """            </choice>\n            <goto scene="menu" />\n        </scene>\n"""
-
-        #<scenes><scene id="saveload">
-        result += """        <scene id="saveload">\n            <fn name="savegames" />\n            <goto scene="menu" />\n        </scene>\n"""
 
         #<scenes><scene id="newgame">
         result += """        <scene id="newgame">\n"""
-        for fn, key, whenActivate in data["keymap"]:
+        for fn, key, whenActivate, name in data["keymap"]:
             if  whenActivate == "newgame":
                 result += """            <trigger name="%s_by_%s" action="activate" />\n""" % ( fn, key.lower() )
         result += """            <sub scene="rpy_%s" />\n""" % _LB_START_LABEL_
-        for fn, key, whenActivate in data["keymap"]:
+        for fn, key, whenActivate, name in data["keymap"]:
             result += """            <trigger name="%s_by_%s" action="deactivate" />\n""" % ( fn, key.lower() )
         result += """            <hide asset="tb_nvl" duration="0" />\n"""
         result += """            <hide asset="tb_adv" duration="0" />\n"""
         result += """            <wait />\n            <restart/>\n        </scene>\n"""
 
+        #<scenes><scene id="saveload">
+        result += """        <scene id="saveload">\n            <fn name="savegames" />\n            <goto scene="menu" />\n        </scene>\n"""
+
+        #<scenes><scene id="help">
+        result += '        <scene id="help">\n            <alert title="Key and Mouse Bindings:" message="'
+        keys = ["Left-click"] + [name for fn, key, whenActivate, name in data["keymap"] if name and fn=="next"]
+        result += """{u}%s:{/u}{br/}    Advances through the game.{br/}""" % ", ".join(keys)
+        keys = [name for fn, key, whenActivate, name in data["keymap"] if name and fn=="savegames"]
+        result += """{u}%s:{/u}{br/}    Enters the save / load menu.{br/}""" % ", ".join(keys)
+        keys = [name for fn, key, whenActivate, name in data["keymap"] if name and fn=="hidetext"]
+        result += """{u}%s:{/u}{br/}    Toggles text window visibility.{br/}""" % ", ".join(keys)
+        keys = [name for fn, key, whenActivate, name in data["keymap"] if name and fn=="help"]
+        result += """{u}%s:{/u}{br/}    Shows this help screen.{br/}""" % ", ".join(keys)
+        result += '"/>\n        </scene>\n'
+
         #<scenes><scene id="hidetext">
         result += """        <scene id="hidetext">\n"""
-        for fn, key, whenActivate in data["keymap"]:
+        for fn, key, whenActivate, name in data["keymap"]:
             if  fn == "hidetext":
                 result += """            <trigger name="%s_by_%s" action="deactivate" />\n""" % ( fn, key.lower() )
         for s in ["tb_adv", "tb_nvl"]:
                 result += """            <hide asset="%s" duration="0" ifvar="is_%s_visible" ifvalue="true"/>\n""" % ( s, s )
-        for fn, key, whenActivate in data["keymap"]:
+        for fn, key, whenActivate, name in data["keymap"]:
             if  whenActivate == "hidetext":
                 result += """            <trigger name="%s_by_%s" action="activate" />\n""" % ( fn, key.lower() )
         result += """            <break />\n"""
-        for fn, key, whenActivate in data["keymap"]:
+        for fn, key, whenActivate, name in data["keymap"]:
             if  whenActivate == "hidetext":
                 result += """            <trigger name="%s_by_%s" action="deactivate" />\n""" % ( fn, key.lower() )
         for s in ["tb_adv", "tb_nvl"]:
                 result += """            <show asset="%s" duration="0" ifvar="is_%s_visible" ifvalue="true"/>\n""" % ( s, s )
-        for fn, key, whenActivate in data["keymap"]:
+        for fn, key, whenActivate, name in data["keymap"]:
             if  fn == "hidetext":
                 result += """            <trigger name="%s_by_%s" action="activate" />\n""" % ( fn, key.lower() )
         result += """            <break />\n        </scene>\n"""

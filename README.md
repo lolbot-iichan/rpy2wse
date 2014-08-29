@@ -60,7 +60,8 @@ It's mostly a Proof Of Concept. You can use this code however you want, I think.
 + renpy.display.motion.ATLTransform       (aka 'show slavya at right')
 
 ###0.5 - in progress
-+ toggle textbox on 'h'
++ Runtime: toggle textbox on 'h'
++ Runtime: simple help screen
 
 ##THINGS TO DO IN NEAREST FUTURE
 
