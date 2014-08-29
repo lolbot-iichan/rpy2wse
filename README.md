@@ -62,6 +62,7 @@ It's mostly a Proof Of Concept. You can use this code however you want, I think.
 ###0.5 - in progress
 + Runtime: toggle textbox on 'h'
 + Runtime: simple help screen
++ renpy.ast.With: MoveTransition (aka 'show slavya at right with move', using <move asset="my_image" duration="1000" />)
 
 ##THINGS TO DO IN NEAREST FUTURE
 
@@ -76,9 +77,6 @@ It's mostly a Proof Of Concept. You can use this code however you want, I think.
 + toggle fullscreen on 'f'
 + toggle fastforward on 'tab'
 + fastforward during 'ctrl'
-
-###using &lt;move/&gt;:
-+ renpy.ast.With: MoveTransition (aka 'show slavya at right with move', using <move asset="my_image" duration="1000" />)
 
 ###other todo:
 + fit screen on mobile

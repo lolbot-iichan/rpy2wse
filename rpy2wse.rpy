@@ -111,6 +111,7 @@ init python:
 # 0.5 - in progress
 #     Runtime: toggle textbox on 'h'
 #     Runtime: simple help screen
+#     renpy.ast.With: MoveTransition          (aka 'show slavya at right with move'
 
 # ==============================
 # THINGS TO DO IN NEAREST FUTURE
@@ -121,8 +122,6 @@ init python:
 #     renpy.ast.Menu: options with conditions
 #     renpy.ast.Jump: expression
 #     renpy.ast.Call: expression
-# using <move/>:
-#     renpy.ast.With: MoveTransition          (aka 'show slavya at right with move'
 # behaviour:
 #     toggle fullscreen on 'f'
 #     toggle fastforward on 'tab'
@@ -853,6 +852,9 @@ init 9999 python:
                 elif item["type"] == "with_begin":
                     if  item["func"] in ["None", "NoTransition"]:
                         pass
+                    elif item["func"] == "MoveTransition":
+                        result += update_textbox(is_visible)
+                        move_duration = int( item["args"][0]*1000 )
                     elif item["func"] == "Dissolve":
                         result += update_textbox(is_visible)
                         dissolve_duration = int( item["args"][0]*1000 )
@@ -870,6 +872,10 @@ init 9999 python:
                 elif item["type"] == "with_end":
                     if  item["func"] == "None":
                         pass
+                    elif item["func"] == "MoveTransition":
+                        if  move_duration > 0:
+                            result += """            <wait />\n"""
+                        move_duration = 0
                     elif item["func"] == "Dissolve":
                         if  dissolve_duration > 0:
                             result += """            <wait />\n"""
