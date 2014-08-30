@@ -73,10 +73,16 @@ It's mostly a Proof Of Concept. You can use this code however you want, I think.
 + renpy.ast.Jump: expression
 + renpy.ast.Call: expression
 
-###behaviour:
-+ toggle fullscreen on 'f'
-+ toggle fastforward on 'tab'
-+ fastforward during 'ctrl'
+###runtime:
++ Runtime: toggle fullscreen on 'f'
++ Runtime: toggle fastforward on 'tab'
++ Runtime: fastforward during 'ctrl'
++ Runtime: toggle textbox on Middle-click
++ Runtime: toggle savegames menu on Right-click
+
+###conversion:
++ Convertion: download audio conversion tools
++ Convertion: patch RenPy's script.py file
 
 ###other todo:
 + fit screen on mobile

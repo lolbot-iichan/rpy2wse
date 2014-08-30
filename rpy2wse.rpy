@@ -122,12 +122,13 @@ init python:
 #     renpy.ast.Menu: options with conditions
 #     renpy.ast.Jump: expression
 #     renpy.ast.Call: expression
-# behaviour:
+# runtime:
 #     Runtime: toggle fullscreen on 'f'
 #     Runtime: toggle fastforward on 'tab'
 #     Runtime: fastforward during 'ctrl'
 #     Runtime: toggle textbox on Middle-click
 #     Runtime: toggle savegames menu on Right-click
+# convertion:
 #     Convertion: download audio conversion tools
 #     Convertion: patch RenPy's script.py file
 # other todo:
