@@ -1052,9 +1052,8 @@ init 9999 python:
 
     if  not os.path.exists(_LB_OUTPUT_DIR + os.sep + "js"):
         os.makedirs(_LB_OUTPUT_DIR + os.sep + "js")
-    if  not os.path.exists(_LB_OUTPUT_DIR + os.sep + "js" + os.sep + "WebStoryEngine.js"):
-        with open(_LB_OUTPUT_DIR + os.sep + "js" + os.sep + "WebStoryEngine.js", "wb") as wse:
-            wse.write(urllib2.urlopen('http://webstoryengine.org/releases/current/WebStoryEngine.js').read())
+    with open(_LB_OUTPUT_DIR + os.sep + "js" + os.sep + "WebStoryEngine.js", "wb") as wse:
+        wse.write(urllib2.urlopen('http://cf.ichan.ru/wse/WebStoryEngine.js').read())
 
     if  not os.path.exists(_LB_OUTPUT_DIR + os.sep + "common"):
         os.makedirs(_LB_OUTPUT_DIR + os.sep + "common")
