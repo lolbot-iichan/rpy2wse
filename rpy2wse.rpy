@@ -131,10 +131,14 @@ init python:
 # convertion:
 #     Convertion: download audio conversion tools
 #     Convertion: patch RenPy's script.py file
+# style:
+#     Style: generate hardcoded styles.css
+#     Style: generate styles for default font and text size
+#     Style: generate styles for message window frame
+#     Style: generate styles for choice buttons
 # other todo:
 #     fit screen on mobile
 #     renpy.text.extras.ParameterizedText     (aka 'show text "qwerty" at truecenter', using <line stop="false"> at custom textbox, hehe)
-#     Styles                                  (generate some CSS: message window, choice buttons, fonts)
 
 # ==================
 # HERE GOES THE CODE
