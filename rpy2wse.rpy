@@ -111,6 +111,7 @@ init python:
 # 0.5 - in progress
 #     Runtime: toggle textbox on 'h'
 #     Runtime: simple help screen
+#     Styles: color from who_args
 #     renpy.ast.With: MoveTransition          (aka 'show slavya at right with move'
 
 # ==============================
@@ -118,6 +119,8 @@ init python:
 # ==============================
 # using <var/>:
 #     renpy.ast.Python: more complex math     (aka 'x = y * 3 + 2')
+#     renpy.ast.If: refactoring for using nested tags
+#     renpy.ast.Menu: refactoring for using nested tags
 #     renpy.ast.If: more complex math         (aka 'if x == 2', 'if x > 5 and x < y')
 #     renpy.ast.Menu: options with conditions
 #     renpy.ast.Jump: expression
@@ -131,11 +134,11 @@ init python:
 # convertion:
 #     Convertion: download audio conversion tools
 #     Convertion: patch RenPy's script.py file
-# style:
-#     Style: generate hardcoded styles.css
-#     Style: generate styles for default font and text size
-#     Style: generate styles for message window frame
-#     Style: generate styles for choice buttons
+# styles:
+#     Styles: generate hardcoded styles.css
+#     Styles: generate styles for default font and text size
+#     Styles: generate styles for message window frame
+#     Styles: generate styles for choice buttons
 # other todo:
 #     fit screen on mobile
 #     renpy.text.extras.ParameterizedText     (aka 'show text "qwerty" at truecenter', using <line stop="false"> at custom textbox, hehe)
@@ -191,7 +194,14 @@ init 9999 python:
 
         # characters
         sd = renpy.store.__dict__
-        data["characters"] = dict([(i,{"mode":sd[i].mode,"displayname":sd[i].name}) for i in sd if isinstance(sd[i], renpy.character.ADVCharacter)])
+        data["characters"] = {}
+        for i in sd:
+            if  isinstance(sd[i], renpy.character.ADVCharacter):
+                data["characters"][i] = {}
+                data["characters"][i]["mode"] = sd[i].mode
+                data["characters"][i]["displayname"] = sd[i].name
+                if  "color" in sd[i].who_args:
+                    data["characters"][i]["color"] = sd[i].who_args["color"]
 
         # images
         imgs = renpy.display.image.images
@@ -610,7 +620,10 @@ init 9999 python:
         for name, c in data["characters"].iteritems():
             result += """        <character name="%s" textbox="%s">""" % (name, "tb_adv" if c["mode"] == "say" else "tb_nvl")
             if  c["displayname"] != None:
-                result += """<displayname>%s</displayname>""" % c["displayname"]
+                if  "color" in c:
+                    result += """<displayname><font color="%s">%s</font></displayname>""" % (c["color"], c["displayname"])
+                else:
+                    result += """<displayname>%s</displayname>""" % c["displayname"]
             result += """</character>\n"""
         for c in data["images_txt"]:
             result += """        <!-- [TODO] Not a simple character: %s -->\n""" % (" ".join(c))
