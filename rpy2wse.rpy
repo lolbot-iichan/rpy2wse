@@ -111,6 +111,7 @@ init python:
 # 0.5 - in progress
 #     Runtime: toggle textbox on 'h'
 #     Runtime: simple help screen
+#     Runtime: toggle savegames menu on Right-click
 #     Styles: color from who_args
 #     renpy.ast.With: MoveTransition          (aka 'show slavya at right with move'
 
@@ -130,7 +131,6 @@ init python:
 #     Runtime: toggle fastforward on 'tab'
 #     Runtime: fastforward during 'ctrl'
 #     Runtime: toggle textbox on Middle-click
-#     Runtime: toggle savegames menu on Right-click
 # convertion:
 #     Convertion: download audio conversion tools
 #     Convertion: patch RenPy's script.py file
@@ -174,7 +174,7 @@ init 9999 python:
 
         # triggers
         data["keymap"] = [
-#               {"fn":"savegames", "when":"start",    "label":"Right-click", "event":"contextmenu", "key":None},
+                {"fn":"savegames", "when":"start",    "label":"Right-click", "event":"contextmenu", "key":None},
                 {"fn":"savegames", "when":"start",    "label":"Escape",      "event":"keyup", "key":"ESCAPE"},
                 {"fn":"help",      "when":"start",    "label":"F1",          "event":"keyup", "key":"F1"},
                 {"fn":"next",      "when":"start",    "label":"Right",       "event":"keyup", "key":"RIGHT_ARROW"},
@@ -1069,8 +1069,9 @@ init 9999 python:
 
     if  not os.path.exists(_LB_OUTPUT_DIR + os.sep + "js"):
         os.makedirs(_LB_OUTPUT_DIR + os.sep + "js")
-    with open(_LB_OUTPUT_DIR + os.sep + "js" + os.sep + "WebStoryEngine.js", "wb") as wse:
-        wse.write(urllib2.urlopen('http://cf.ichan.ru/wse/WebStoryEngine.js').read())
+    if  not os.path.exists(_LB_OUTPUT_DIR + os.sep + "js" + os.sep + "WebStoryEngine.js"):
+        with open(_LB_OUTPUT_DIR + os.sep + "js" + os.sep + "WebStoryEngine.js", "wb") as wse:
+            wse.write(urllib2.urlopen('http://cf.ichan.ru/wse/WebStoryEngine.js').read())
 
     if  not os.path.exists(_LB_OUTPUT_DIR + os.sep + "common"):
         os.makedirs(_LB_OUTPUT_DIR + os.sep + "common")

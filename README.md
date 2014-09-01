@@ -62,6 +62,7 @@ It's mostly a Proof Of Concept. You can use this code however you want, I think.
 ###0.5 - in progress
 + Runtime: toggle textbox on 'h'
 + Runtime: simple help screen
++ Runtime: toggle savegames menu on Right-click
 + Styles: config.main_menu_music
 + renpy.ast.With: MoveTransition (aka 'show slavya at right with move', using <move asset="my_image" duration="1000" />)
 
@@ -81,7 +82,6 @@ It's mostly a Proof Of Concept. You can use this code however you want, I think.
 + Runtime: toggle fastforward on 'tab'
 + Runtime: fastforward during 'ctrl'
 + Runtime: toggle textbox on Middle-click
-+ Runtime: toggle savegames menu on Right-click
 
 ###conversion:
 + Convertion: download audio conversion tools
