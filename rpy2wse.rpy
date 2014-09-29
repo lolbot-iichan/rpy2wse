@@ -457,8 +457,8 @@ init 9999 python:
                         result += [ {"type":"todo","details":t+" option layer: "+`layer`} ]
 
                     if  at_list:
-                        if len(at_list) == 1 and at_list[0] in ["center","left","right"]:
-                            at = at_list[0]
+                        if len(at_list) == 1 and at_list[0].rstrip() in ["center","left","right"]:
+                            at = at_list[0].rstrip()
                         else:
                             result += [ {"type":"todo","details":t+" option at_list: "+`at_list`} ]
 
