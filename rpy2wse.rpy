@@ -113,6 +113,7 @@ init python:
 #     Runtime: simple help screen
 #     Runtime: toggle savegames menu on Right-click
 #     Styles: color from who_args
+#     Styles: config.windows_icon
 #     renpy.ast.With: MoveTransition          (aka 'show slavya at right with move'
 
 # ==============================
@@ -127,6 +128,7 @@ init python:
 #     renpy.ast.Jump: expression
 #     renpy.ast.Call: expression
 # runtime:
+#     Runtime: better zorder for bgs and sprites
 #     Runtime: toggle fullscreen on 'f'
 #     Runtime: toggle fastforward on 'tab'
 #     Runtime: fastforward during 'ctrl'
@@ -168,7 +170,7 @@ init 9999 python:
 
         # stage
         data["window_title"] = config.window_title
-        data["window_icon"] = config.window_icon
+        data["window_icon"] = config.windows_icon if config.windows_icon else config.window_icon
         data["screen_width"] = config.screen_width
         data["screen_height"] = config.screen_height
 

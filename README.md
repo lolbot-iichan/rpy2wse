@@ -63,7 +63,8 @@ It's mostly a Proof Of Concept. You can use this code however you want, I think.
 + Runtime: toggle textbox on 'h'
 + Runtime: simple help screen
 + Runtime: toggle savegames menu on Right-click
-+ Styles: config.main_menu_music
++ Styles: color from who_args
++ Styles: config.windows_icon
 + renpy.ast.With: MoveTransition (aka 'show slavya at right with move', using <move asset="my_image" duration="1000" />)
 
 ##THINGS TO DO IN NEAREST FUTURE
@@ -78,6 +79,7 @@ It's mostly a Proof Of Concept. You can use this code however you want, I think.
 + renpy.ast.Call: expression
 
 ###runtime:
++ Runtime: better zorder for bgs and sprites
 + Runtime: toggle fullscreen on 'f'
 + Runtime: toggle fastforward on 'tab'
 + Runtime: fastforward during 'ctrl'
