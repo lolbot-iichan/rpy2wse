@@ -114,7 +114,8 @@ init python:
 #     Runtime: toggle savegames menu on Right-click
 #     Styles: color from who_args
 #     Styles: config.windows_icon
-#     renpy.ast.With: MoveTransition          (aka 'show slavya at right with move'
+#     renpy.ast.Python: renpy.play calls
+#     renpy.ast.With: MoveTransition          (aka 'show slavya at right with move')
 
 # ==============================
 # THINGS TO DO IN NEAREST FUTURE
@@ -141,7 +142,10 @@ init python:
 #     Styles: generate styles for default font and text size
 #     Styles: generate styles for message window frame
 #     Styles: generate styles for choice buttons
+#     Styles: click-to-continue icon
 # other todo:
+#     renpy.ast.Say: extend
+#     snow & cherry blossom animation
 #     fit screen on mobile
 #     renpy.text.extras.ParameterizedText     (aka 'show text "qwerty" at truecenter', using <line stop="false"> at custom textbox, hehe)
 
@@ -354,6 +358,18 @@ init 9999 python:
                     args = match.group(2)
                     if  func == "pause" and not "," in args:
                         result += [{"type":"pause","time":None if  re.match('^ *$',args) else float(args)}]
+                    elif func == "play" and not "," in args:
+                        fname = eval(args,globals())
+                        if  not isinstance(fname, basestring):
+                            result += [ {"type":"todo","details":"build-in function %s with args: %s" % (func,args) } ]
+                        else:
+                            channel = "sound"
+                            if  not channel in data["sound"]:
+                                data["sound"][channel] = {}
+                            title = ".".join(fname.split(".")[:-1])
+                            if  not title in data["sound"][channel]:    
+                                data["sound"][channel][title] = fname
+                            result += [{"type":"play","channel":channel,"title":title}]
                     else:
                         result += [ {"type":"todo","details":"build-in function %s with args: %s" % (func,args) } ]
                     continue

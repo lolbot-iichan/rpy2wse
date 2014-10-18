@@ -65,6 +65,7 @@ It's mostly a Proof Of Concept. You can use this code however you want, I think.
 + Runtime: toggle savegames menu on Right-click
 + Styles: color from who_args
 + Styles: config.windows_icon
++ renpy.ast.Python: renpy.play calls
 + renpy.ast.With: MoveTransition (aka 'show slavya at right with move', using <move asset="my_image" duration="1000" />)
 
 ##THINGS TO DO IN NEAREST FUTURE
@@ -94,7 +95,10 @@ It's mostly a Proof Of Concept. You can use this code however you want, I think.
 + Styles: generate styles for default font and text size
 + Styles: generate styles for message window frame
 + Styles: generate styles for choice buttons
++ Styles: click-to-continue icon
 
 ###other todo:
++ renpy.ast.Say: extend
++ snow & cherry blossom animation
 + fit screen on mobile
 + renpy.text.extras.ParameterizedText (aka 'show text "qwerty" at truecenter', using <line stop="false"> at custom textbox, hehe)
