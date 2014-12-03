@@ -52,7 +52,7 @@ init python:
 #           './                          
 #            '           
 # Written on hard day's nights of pretty nice autumn 2013.
-# You can mail me at: lolbot_iichan@mail.ru
+# You can contact me at: https://github.com/lolbot-iichan
 
 # =============
 # NO GUARANTIES
