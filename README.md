@@ -4,7 +4,7 @@ Converts Ren'Py visual novels to WebStory Engine HTML5 game using RPYC and some 
 ##CONTACTS
 Copyleft by lolbot, member of IIchan.hk eroge project.
 Written on hard day's nights of pretty nice autumn 2013.
-You can mail me at: lolbot_iichan@mail.ru
+You can contact me at: https://github.com/lolbot-iichan
 
 ##NO GUARANTIES
 * Please, note, that this code is not perfect.
